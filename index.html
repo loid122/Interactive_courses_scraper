@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Prerequisites</title>
+    <style>
+        #cy {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+        .popup {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid black;
+            padding: 10px;
+            z-index: 1000;
+        }
+    </style>
+    <!-- Include Cytoscape.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
+</head>
+<body>
+    <h1>Course Prerequisites</h1>
+    <div id="cy"></div>
+    <div id="popup" class="popup"></div>
+
+    <script>
+        const courseprereq = JSON.parse('{{ courseprereq | tojson | safe }}');
+        const elements = [];
+        const addedCourses = new Set();
+
+
+        for (const course in courseprereq) {
+            elements.push({
+                data: { id: course, label: course }
+            });
+            addedCourses.add(course);
+        }
+
+        for (const course in courseprereq) {
+            const prereqList = courseprereq[course];
+
+            if (Array.isArray(prereqList)) { 
+                for (const prereq of prereqList) {
+    
+                    if (!addedCourses.has(prereq)) {
+                        elements.push({
+                            data: { id: prereq, label: prereq }
+                        });
+                        addedCourses.add(prereq);
+                    }
+
+                    elements.push({
+                        data: { id: `${prereq}-${course}`, source: prereq, target: course }
+                    });
+                }
+            }
+        }
+
+        const cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: elements,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(label)',
+                        'width': 60,
+                        'height': 60,
+                        'background-color': '#6FB1FC',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'border-width': 2,
+                        'border-color': '#333'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#999',
+                        'curve-style': 'bezier',
+                        'target-arrow-color': '#999',
+                        'target-arrow-shape': 'triangle', //
+                        'arrow-scale': 1.5 //
+                    }
+                }
+
+            ],
+            layout: {
+                name: 'breadthfirst',
+                directed: true,
+                padding: 10,
+                spacingFactor: 1.5,
+                animate: true
+            }
+        });
+
+
+        cy.on('tap', 'node', async function (event) {
+            const node = event.target;
+            const courseid = node.data('id');
+
+            try {
+     
+                const response = await fetch('/courses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ courseid: courseid }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch course data');
+                }
+
+                const data = await response.json();
+           
+                const prereqs = courseprereq[courseid] || [];  
+                popup.innerHTML = `
+                    <strong>Course Name:</strong> ${data["Course Name"]}<br>
+                    <strong>Instructor Name:</strong> ${data["Instructor Name"]}<br>
+                    <strong>Credits:</strong> ${data["Credits"]}<br>
+                    <strong>Room:</strong> ${data["Room"]}<br>
+                    <strong>Prerequisites:</strong> ${prereqs.length ? prereqs.join(", ") : "None"}<br>
+                    <strong>Offered for BTech:</strong> ${data["Offered for BTech"]}
+                `;
+
+                popup.style.display = 'block';
+                popup.style.left = `${event.renderedPosition.x + 20}px`;
+                popup.style.top = `${event.renderedPosition.y + 20}px`;
+            } catch (error) {
+                console.error('Error fetching course data:', error);
+                alert('Failed to fetch course data');
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!event.target.matches('.popup') && !event.target.matches('node')) {
+                document.getElementById('popup').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
