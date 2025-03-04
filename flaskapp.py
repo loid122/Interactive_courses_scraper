@@ -8,6 +8,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
+    print("hello")
     dept='ME'
     ch=process_prerequisites(get_all_courses_courseprereq_dict(dept),get_all_courses_with_names(dept))
     ch_data = get_all_courses_courseprereq_dict(dept)
