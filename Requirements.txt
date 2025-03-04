@@ -1,0 +1,6 @@
+#following Commands Must be Run First to run the App in Development
+flask
+bs4
+requests
+
+
