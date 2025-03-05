@@ -17,12 +17,11 @@ app = Flask(__name__)
 def home():
     return('THE HOME PAGE IS HERE! ')
 
-@app.route('/map')
-def map():
-    dept='ME'
+@app.route('/map/<dept>')
+def map(dept):
     ch=process_prerequisites(get_all_courses_courseprereq_dict(dept),get_all_courses_with_names(dept))
     ch_data = get_all_courses_courseprereq_dict(dept)
-    return render_template('index.html',courseprereq=ch,coursedata=ch_data)
+    return render_template('indo.html',courseprereq=ch,coursedata=ch_data)
 
 def get_all_courses_courseprereq_dict(dept,period='JAN-MAY 2025'):
     url = "https://academic.iitm.ac.in/load_record1.php"
@@ -223,7 +222,6 @@ def process_prerequisites(all_courses_prereq_dict, all_courses_with_names_dict):
         prereq_list = [i for i in prereq_list if isinstance(i, str)]
 
         filtered_prereqs[course] = list(set(prereq_list))
-    print(filtered_prereqs)
     return filtered_prereqs
 
 @app.route('/courses', methods=['POST'])
@@ -234,7 +232,7 @@ def course():
         return(jsonify(get_specific_course_details(c_id,c_id[:2])))
         
     else:
-        return ('courseid not string')
+        return (jsonify({'error':'courseid not string'}))
 
 #GETTING CURRICULUM DICTS FOR SPECIFIC BRANCH AND DEGREE
 @app.route('/curriculum/2019_btech')
