@@ -1,18 +1,28 @@
-from flask import Flask, render_template,request,jsonify
+from flask import Flask, render_template,request,jsonify,redirect
 from bs4 import BeautifulSoup
 import html
 import requests
 import re
+from collections import defaultdict
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 
 app = Flask(__name__)
-
 @app.route('/')
 def home():
+    return('THE HOME PAGE IS HERE! ')
+
+@app.route('/map')
+def map():
     dept='ME'
     ch=process_prerequisites(get_all_courses_courseprereq_dict(dept),get_all_courses_with_names(dept))
     ch_data = get_all_courses_courseprereq_dict(dept)
     return render_template('index.html',courseprereq=ch,coursedata=ch_data)
-
 
 def get_all_courses_courseprereq_dict(dept,period='JAN-MAY 2025'):
     url = "https://academic.iitm.ac.in/load_record1.php"
@@ -216,9 +226,6 @@ def process_prerequisites(all_courses_prereq_dict, all_courses_with_names_dict):
     print(filtered_prereqs)
     return filtered_prereqs
 
-
-
-
 @app.route('/courses', methods=['POST'])
 def course():
     c_id = request.json.get('courseid')
@@ -228,6 +235,462 @@ def course():
         
     else:
         return ('courseid not string')
+
+#GETTING CURRICULUM DICTS FOR SPECIFIC BRANCH AND DEGREE
+@app.route('/curriculum/2019_btech')
+def get_curriculum_2019btech():
+    return(redirect('https://www.iitm.ac.in/sites/default/files/Academic Curricula Files/B.Tech-Curriculum-2019.pdf'))
+
+@app.route('/curriculum/2019_mtech')
+def get_curriculum_2019mtech():
+    return(redirect('https://www.iitm.ac.in/sites/default/files/Academic Curricula Files/DualDegree-Curriculum-2019.pdf'))
+
+@app.route('/curriculum/cs')
+def get_curriculum_cs():
+    res = requests.get('https://www.cse.iitm.ac.in/pages.php?pages=MzA=')
+
+    raw_html = res.text
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+
+
+    result = {}
+
+    for table in soup.find_all('table'):
+        for row in table.find_all('tr')[1:-1]:  # Skip the header and total row
+            cells = row.find_all('td')
+            if len(cells) >= 11:  # Ensure there are enough columns
+                semester = f"sem{cells[0].get_text(strip=True)}"
+                course_code = cells[1].get_text(strip=True)
+                course_title = cells[2].get_text(strip=True)
+                credits = cells[9].get_text(strip=True)
+                category = cells[10].get_text(strip=True)
+
+                if semester not in result:
+                    result[semester] = {}
+
+                if course_code:  
+                    result[semester][course_code] = [course_title, credits, category]
+
+    return(result)  # Final nested dict
+
+@app.route('/curriculum/me')
+def get_curriculum_me():
+    res = requests.get('https://mech.iitm.ac.in/curriculum.php')
+    raw_html = res.text
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+
+    result = {}
+
+    # Identify the table
+    for table in soup.find_all('table'):
+        current_sem = None
+
+        # Iterate through rows
+        for row in table.find('tbody').find_all('tr'):
+            cells = [td.get_text(strip=True) for td in row.find_all('td')]
+
+            # Check if the row indicates a new semester
+            if 'Semester' in cells[0]:
+                current_sem = cells[0].replace(' ', '').lower()
+                result[current_sem] = {}
+
+            # Add course details to the current semester
+            elif current_sem and all(cells[:2]):
+                course_code = cells[0]
+                course_name = cells[1]
+                credits = cells[8]
+                category = cells[9]
+                result[current_sem][course_code] = [course_name, credits, category]
+
+    return(result)  # Final mech dictionary for old curriculum
+
+@app.route('/curriculum/ee/old')
+def get_curriculum_ee_old():
+    return(redirect('https://www.ee.iitm.ac.in/eeimg/UG-curriculum_2023_and_older_batches.pdf'))
+
+@app.route('/curriculum/ee/new')
+def get_curriculum_ee_new():
+    return(redirect('https://www.ee.iitm.ac.in/eeimg/UG-curriculum_2024_onward_batches.pdf'))
+
+@app.route('/curriculum/ae/dual')
+def get_curriculum_ae_dual():
+    return(redirect('https://ae.iitm.ac.in/documents/BTech_dd_ae_2015_batch.pdf'))
+
+@app.route('/curriculum/ae/btech')
+def get_curriculum_ae():
+    return(redirect('https://ae.iitm.ac.in/documents/BT_curriculum.pdf'))
+
+@app.route('/curriculum/ep/btech')
+def get_curriculum_ep():
+    return(redirect('https://physics.iitm.ac.in/dashboard/download/EP_curriculum_official.pdf'))
+
+@app.route('/curriculum/ep/dual')
+def get_curriculum_ep_dual():
+    return(redirect('https://physics.iitm.ac.in/dashboard/download/DD_curriculum_official.pdf'))
+
+@app.route('/curriculum/civil/22/btech')
+def get_curriculum_civil_22():
+    return(redirect('https://civil.iitm.ac.in//admin/coursedetailimage/2022%20Batch%20-%20B.Tech%20Curriculum.pdf'))
+
+@app.route('/curriculum/civil/22/mtech')
+def get_curriculum_civil_22_mtech():
+    return(redirect('https://civil.iitm.ac.in//admin/coursedetailimage/2022%20Batch%20-%20MTech%20Curriculum.pdf'))
+
+@app.route('/curriculum/civil/24/btech')
+def get_curriculum_civil_24():
+    return(redirect('https://civil.iitm.ac.in//admin/coursedetailimage/B.Tech 2024 curriculum.pdf'))
+
+@app.route('/curriculum/oe/btech')
+def get_curriculum_oe():
+    res = requests.get('https://doe.iitm.ac.in/courses/')
+    raw_html = res.text
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+    target_section = None
+    for section in soup.find_all('div', class_='su-spoiler-title'):
+        if 'B.Tech (Naval Architecture & Ocean Engineering Syllabus)' in section.text:
+            target_section = section.find_next_sibling('div')
+            break
+
+    # Extract data only from the target section
+    data = defaultdict(lambda: defaultdict(list))
+
+    if target_section:
+        for pane in target_section.find_all('div', class_='su-tabs-pane'):
+            semester = pane.get('data-title', 'Unknown Semester')
+
+            for row in pane.find_all('tr'):
+                cells = row.find_all('td')
+
+                # Skip rows without enough columns or header rows
+                if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
+                    course_code = cells[0].text.strip()
+                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
+                    credits = cells[7].text.strip()  # 'Cr' value
+                    category = cells[8].text.strip() # 'Cat' value
+
+                    # Store the required information
+                    data[semester][course_code] = [course_title, credits, category]
+
+    return(dict(data))
+
+@app.route('/curriculum/oe/bmtech')
+def get_curriculum_oe_bmtech():
+    res = requests.get('https://doe.iitm.ac.in/courses/')
+    raw_html = res.text
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+
+
+
+    target_section = None
+    for section in soup.find_all('div', class_='su-spoiler-title'):
+        if 'B.Tech & M.Tech( Naval Architecture & Ocean Engineering)' in section.text:
+            target_section = section.find_next_sibling('div')
+            break
+
+    # Extract data only from the target section
+    data = defaultdict(lambda: defaultdict(list))
+
+    if target_section:
+        for pane in target_section.find_all('div', class_='su-tabs-pane'):
+            semester = pane.get('data-title', 'Unknown Semester')
+
+            for row in pane.find_all('tr'):
+                cells = row.find_all('td')
+
+                # Skip rows without enough columns or header rows
+                if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
+                    course_code = cells[0].text.strip()
+                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
+                    credits = cells[7].text.strip()  # 'Cr' value
+                    category = cells[8].text.strip() # 'Cat' value
+
+                    # Store the required information
+                    data[semester][course_code] = [course_title, credits, category]
+
+    return(dict(data))
+
+@app.route('/curriculum/oe/mtech_oceanstructures_stream1')
+def get_curriculum_oe_mtech_oceanstructures_s1():
+    res = requests.get('https://doe.iitm.ac.in/courses/')
+    raw_html = res.text
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+    target_section = None
+    for section in soup.find_all('div', class_='su-spoiler-title'):
+        if 'Stream - 1 : Offshore and Ship structures' in section.text:
+            target_section = section.find_next_sibling('div')
+            break
+
+    # Extract data only from the target section
+    data = defaultdict(lambda: defaultdict(list))
+
+    if target_section:
+        for pane in target_section.find_all('div', class_='su-tabs-pane'):
+            semester = pane.get('data-title', 'Unknown Semester')
+
+            for row in pane.find_all('tr'):
+                cells = row.find_all('td')
+
+                # Skip rows without enough columns or header rows
+                if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
+                    course_code = cells[0].text.strip()
+                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
+                    credits = cells[7].text.strip()  # 'Cr' value
+                    category = cells[8].text.strip() # 'Cat' value
+
+                    # Store the required information
+                    data[semester][course_code] = [course_title, credits, category]
+
+    return(dict(data))
+
+@app.route('/curriculum/oe/mtech_oceanstructures_stream1')
+def get_curriculum_oe_mtech_oceanstructures_s2():
+    res = requests.get('https://doe.iitm.ac.in/courses/')
+    raw_html = res.text
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+    target_section = None
+    for section in soup.find_all('div', class_='su-spoiler-title'):
+        if 'Stream - 2 : Port, Harbour and Coastal Structure' in section.text:
+            target_section = section.find_next_sibling('div')
+            break
+
+    # Extract data only from the target section
+    data = defaultdict(lambda: defaultdict(list))
+
+    if target_section:
+        for pane in target_section.find_all('div', class_='su-tabs-pane'):
+            semester = pane.get('data-title', 'Unknown Semester')
+
+            for row in pane.find_all('tr'):
+                cells = row.find_all('td')
+
+                # Skip rows without enough columns or header rows
+                if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
+                    course_code = cells[0].text.strip()
+                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
+                    credits = cells[7].text.strip()  # 'Cr' value
+                    category = cells[8].text.strip() # 'Cat' value
+
+                    # Store the required information
+                    data[semester][course_code] = [course_title, credits, category]
+
+    return(dict(data))
+    
+@app.route('/curriculum/oe/mtech_oceantech')
+def get_curriculum_oe_mtech_oceantech():
+    res = requests.get('https://doe.iitm.ac.in/courses/')
+    raw_html = res.text
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+    target_section = None
+    for section in soup.find_all('div', class_='su-spoiler-title'):
+        if 'M.Tech Ocean Technology (NIOT UOP - OE2)' in section.text:
+            target_section = section.find_next_sibling('div')
+            break
+
+    # Extract data only from the target section
+    data = defaultdict(lambda: defaultdict(list))
+
+    if target_section:
+        for pane in target_section.find_all('div', class_='su-tabs-pane'):
+            semester = pane.get('data-title', 'Unknown Semester')
+
+            for row in pane.find_all('tr'):
+                cells = row.find_all('td')
+
+                # Skip rows without enough columns or header rows
+                if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
+                    course_code = cells[0].text.strip()
+                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
+                    credits = cells[7].text.strip()  # 'Cr' value
+                    category = cells[8].text.strip() # 'Cat' value
+
+                    # Store the required information
+                    data[semester][course_code] = [course_title, credits, category]
+
+    return(dict(data))
+
+@app.route('/curriculum/oe/mtech_petroleum')
+def get_curriculum_oe_mtech_petroleum():
+    res = requests.get('https://doe.iitm.ac.in/courses/')
+    raw_html = res.text
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+    target_section = None
+    for section in soup.find_all('div', class_='su-spoiler-title'):
+        if 'M.Tech Petroleum Engineering' in section.text:
+            target_section = section.find_next_sibling('div')
+            break
+
+    # Extract data only from the target section
+    data = defaultdict(lambda: defaultdict(list))
+
+    if target_section:
+        for pane in target_section.find_all('div', class_='su-tabs-pane'):
+            semester = pane.get('data-title', 'Unknown Semester')
+
+            for row in pane.find_all('tr'):
+                cells = row.find_all('td')
+
+                # Skip rows without enough columns or header rows
+                if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
+                    course_code = cells[0].text.strip()
+                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
+                    credits = cells[7].text.strip()  # 'Cr' value
+                    category = cells[8].text.strip() # 'Cat' value
+
+                    # Store the required information
+                    data[semester][course_code] = [course_title, credits, category]
+
+    return(dict(data))
+
+@app.route('/curriculum/ed/auto_old')
+def get_curriculum_ed_auto_old():
+    return(redirect('https://ed.iitm.ac.in/img/files/Revised curriculum Auto from July 2019 Batch 22.06.2021.pdf'))
+
+@app.route('/curriculum/ed/auto_new')
+def get_curriculum_ed_auto_new():
+    return(redirect('https://ed.iitm.ac.in/img/files/ED_Automotive_DD_Credit_2024_Batch_Onward.pdf'))
+
+@app.route('/curriculum/ed/bio_old')
+def get_curriculum_ed_bio_old():
+    return(redirect('https://ed.iitm.ac.in/img/files/Revised curriculum Bio from July 2019 Batch 22.06.21.pdf'))
+
+@app.route('/curriculum/ed/bio_new')
+def get_curriculum_ed_bio_new():
+    return(redirect('https://ed.iitm.ac.in/img/files/ED_Biomedical_DD_Credit_2024_Batch_Onward.pdf'))
+
+@app.route('/curriculum/ed/iddd_robo_old')
+def get_curriculum_ed_iddd_robo_old():
+    return(redirect('https://ed.iitm.ac.in/img/files/IDDD.pdf'))
+
+@app.route('/curriculum/ed/iddd_robo_new')
+def get_curriculum_ed_iddd_robo_new():
+    return(redirect('https://ed.iitm.ac.in/img/files/IDDD_Robotics_2025.pdf'))
+
+@app.route('/curriculum/ed/iddd_ev_old')
+def get_curriculum_ed_iddd_ev_old():
+    return(redirect('https://ed.iitm.ac.in/img/files/IDDD-EV-Curriculum_Senate_Approved_Jan_2022.pdf'))
+
+@app.route('/curriculum/ed/iddd_ev_new')
+def get_curriculum_ed_iddd_ev_new():
+    return(redirect('https://ed.iitm.ac.in/img/files/IDDD-EV-Curriculum_2025_Onward.pdf'))
+
+
+@app.route('/ikollege/NFC_expenditure')
+def expenditure():
+
+    # Firefox options (Optional: Run headless in background)
+    options = Options()
+    options.add_argument("--headless")  # Uncomment for headless mode
+
+    # Initialize driver
+    driver = webdriver.Firefox(options=options)
+
+    driver.get("https://ikollege.iitm.ac.in/iitmhostel/login.do?method=userlogin&loginType=student")
+
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "loginid"))).send_keys("ed23b082")
+    driver.find_element(By.ID, "passwordid").send_keys('XNRA2DEkzgL')
+
+    # Click the login button
+    login_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='Login']"))
+    )
+    login_button.click()
+
+
+    customer_login = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.LINK_TEXT, "Click here to View the Food Court Report"))
+        )
+
+    current_url = driver.current_url
+    customer_login.click()
+
+
+    WebDriverWait(driver, 20).until(lambda d: d.current_url != current_url)
+
+    raw_html = driver.page_source  # Updated content
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+
+    with open('r2esp.html','w') as f:
+        f.write(html_data)
+    soup = BeautifulSoup(html_data,'html.parser')
+    table = soup.find('table')
+
+    # Extract headings
+    headings = [th.text.strip() for th in table.find_all('th')]
+
+    # Extract rows (excluding the total row)
+    rows = []
+    for tr in table.find_all('tr'):
+        cells = [td.text.strip() for td in tr.find_all('td')]
+        if cells and "Total :" not in cells:
+            rows.append(cells)
+
+    # Structure the data
+    data = {
+        "headings": headings,
+        "rows": rows
+    }
+    driver.quit()
+    return(data)
+
+@app.route('/viewgrades')
+def viewgrades(user_rollno,user_pw):
+    options = Options()
+    options.add_argument("--headless")
+    driver = webdriver.Firefox(options=options)
+
+    driver.get("https://www.iitm.ac.in/viewgrades/")
+
+    # Input credentials
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "username"))).send_keys(user_rollno)
+    driver.find_element(By.ID, "password").send_keys(user_pw)
+
+    # Click the login button
+    login_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='LogIn']"))
+    )
+    current_url = driver.current_url
+    login_button.click()
+
+    WebDriverWait(driver, 20).until(lambda d: d.current_url != current_url)
+
+    raw_html = driver.page_source  # Updated content
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+
+    headers = [th.get_text(strip=True) for th in soup.find_all('th')]
+
+    # Initialize output
+    output = {}
+
+    # Find all semesters and corresponding tables
+    semester_tables = soup.find_all('table')[1:]  # Ignore first table (header)
+
+    current_semester = None
+    for table in semester_tables:
+        rows = table.find_all('tr')
+
+        for row in rows:
+            cols = [td.get_text(strip=True) for td in row.find_all('td')]
+
+            # Identify semester row
+            if len(cols) == 1 and 'Semester' in cols[0]:
+                current_semester = cols[0]
+                output[current_semester] = {}
+
+            # Regular course rows
+            elif len(cols) == 7 and current_semester:
+                course_no = cols[1]
+                output[current_semester][course_no] = cols[2:]
+    driver.quit()        
+    return(output)
 
 
 
