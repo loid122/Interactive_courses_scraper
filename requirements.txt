@@ -1,4 +1,0 @@
-flask
-bs4
-requests
-selenium
