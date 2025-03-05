@@ -5,107 +5,219 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Prerequisites</title>
     <style>
-        #cy {
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 20px;
+        }
+        #graph {
             width: 100%;
             height: 600px;
             border: 1px solid #ccc;
+            background-color: white;
+            overflow: hidden;
+            position: relative;
+        }
+        .node {
+            cursor: pointer;
+        }
+        .node circle {
+            fill: #6FB1FC;
+            stroke: #333;
+            stroke-width: 2px;
+        }
+        .node text {
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none; /* Make text non-clickable */
+            fill: #333; /* Text color */
+            font-size: 14px; /* Consistent font size */
+            font-weight: bold; /* Bold text */
+        }
+        .link {
+            stroke: #999;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead); /* Add arrowhead marker */
         }
         .popup {
             display: none;
             position: absolute;
             background-color: white;
-            border: 1px solid black;
-            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
             z-index: 1000;
+            max-width: 300px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <!-- Include Cytoscape.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
+    <!-- Include D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
     <h1>Course Prerequisites</h1>
-    <div id="cy"></div>
+    <div id="graph"></div>
     <div id="popup" class="popup"></div>
 
     <script>
         const courseprereq = JSON.parse('{{ courseprereq | tojson | safe }}');
-        const elements = [];
+        const nodes = [];
+        const links = [];
         const addedCourses = new Set();
 
-
+        // Prepare nodes and links
         for (const course in courseprereq) {
-            elements.push({
-                data: { id: course, label: course }
-            });
+            nodes.push({ id: course, label: course });
             addedCourses.add(course);
-        }
 
-        for (const course in courseprereq) {
             const prereqList = courseprereq[course];
-
-            if (Array.isArray(prereqList)) { 
+            if (Array.isArray(prereqList)) {
                 for (const prereq of prereqList) {
-    
                     if (!addedCourses.has(prereq)) {
-                        elements.push({
-                            data: { id: prereq, label: prereq }
-                        });
+                        nodes.push({ id: prereq, label: prereq });
                         addedCourses.add(prereq);
                     }
-
-                    elements.push({
-                        data: { id: `${prereq}-${course}`, source: prereq, target: course }
-                    });
+                    links.push({ source: prereq, target: course });
                 }
             }
         }
 
-        const cy = cytoscape({
-            container: document.getElementById('cy'),
-            elements: elements,
-            style: [
-                {
-                    selector: 'node',
-                    style: {
-                        'label': 'data(label)',
-                        'width': 60,
-                        'height': 60,
-                        'background-color': '#6FB1FC',
-                        'text-valign': 'center',
-                        'text-halign': 'center',
-                        'border-width': 2,
-                        'border-color': '#333'
-                    }
-                },
-                {
-                    selector: 'edge',
-                    style: {
-                        'width': 2,
-                        'line-color': '#999',
-                        'curve-style': 'bezier',
-                        'target-arrow-color': '#999',
-                        'target-arrow-shape': 'triangle', //
-                        'arrow-scale': 1.5 //
-                    }
-                }
+        // Set up D3.js graph
+        let width = document.getElementById('graph').clientWidth;
+        let height = document.getElementById('graph').clientHeight;
 
-            ],
-            layout: {
-                name: 'breadthfirst',
-                directed: true,
-                padding: 10,
-                spacingFactor: 1.5,
-                animate: true
+        const svg = d3.select("#graph")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .call(d3.zoom().on("zoom", (event) => {
+                svg.attr("transform", event.transform);
+            }))
+            .append("g");
+
+        // Define arrowhead marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "-0 -5 10 10")
+            .attr("refX", 25) // Adjust arrowhead position
+            .attr("refY", 0)
+            .attr("orient", "auto")
+            .attr("markerWidth", 10)
+            .attr("markerHeight", 10)
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#999");
+
+        // Define circular boundary
+        const boundaryRadius = Math.min(width, height) / 0.3; // Radius of the boundary
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        // Add a circular boundary force
+        function circularBoundaryForce() {
+            for (const node of nodes) {
+                const dx = node.x - centerX;
+                const dy = node.y - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > boundaryRadius) {
+                    const angle = Math.atan2(dy, dx);
+                    node.x = centerX + boundaryRadius * Math.cos(angle);
+                    node.y = centerY + boundaryRadius * Math.sin(angle);
+                }
             }
+        }
+
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(200)) // Increased arrow length
+            .force("charge", d3.forceManyBody().strength(-300)) // Increased repulsion
+            .force("center", d3.forceCenter(centerX, centerY))
+            .force("collision", d3.forceCollide().radius(30)) // Prevent overlap
+            .force("boundary", circularBoundaryForce); // Add circular boundary force
+
+        const link = svg.append("g")
+            .selectAll("line")
+            .data(links)
+            .enter()
+            .append("line")
+            .attr("class", "link")
+            .attr("stroke", "#FF6F61"); // Colorful links
+
+        // Create a group for each node
+        const node = svg.append("g")
+            .selectAll("g")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("class", "node")
+            .call(drag(simulation));
+
+        // Add circle to each node group
+        node.append("circle")
+            .attr("r", 30) // Fixed radius for circles
+            .attr("fill", "#6FB1FC"); // Node color
+
+        // Add text to each node group
+        node.append("text")
+            .attr("dy", "0.35em")
+            .text(d => d.label);
+
+        // Update positions on each tick
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("transform", d => `translate(${d.x},${d.y})`);
         });
 
+        // Drag functionality
+        function drag(simulation) {
+            function dragstarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
 
-        cy.on('tap', 'node', async function (event) {
-            const node = event.target;
-            const courseid = node.data('id');
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+
+            function dragended(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+
+            return d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended);
+        }
+
+        // Popup functionality
+        const popup = document.getElementById("popup");
+
+        node.on("click", async function (event, d) {
+            const [x, y] = d3.pointer(event); // Get correct click coordinates
+            const courseid = d.id;
 
             try {
-     
                 const response = await fetch('/courses', {
                     method: 'POST',
                     headers: {
@@ -119,20 +231,20 @@
                 }
 
                 const data = await response.json();
-           
-                const prereqs = courseprereq[courseid] || [];  
+                const prereqs = courseprereq[courseid] || [];
+
                 popup.innerHTML = `
                     <strong>Course Name:</strong> ${data["Course Name"]}<br>
                     <strong>Instructor Name:</strong> ${data["Instructor Name"]}<br>
-                    <strong>Credits:</strong> ${data["Credits"]}<br>
+                    <strong>Credits:</strong> ${data["New Credit"]}<br>
                     <strong>Room:</strong> ${data["Room"]}<br>
                     <strong>Prerequisites:</strong> ${prereqs.length ? prereqs.join(", ") : "None"}<br>
                     <strong>Offered for BTech:</strong> ${data["Offered for BTech"]}
                 `;
 
                 popup.style.display = 'block';
-                popup.style.left = `${event.renderedPosition.x + 20}px`;
-                popup.style.top = `${event.renderedPosition.y + 20}px`;
+                popup.style.left = `${x + 10}px`;
+                popup.style.top = `${y + 10}px`;
             } catch (error) {
                 console.error('Error fetching course data:', error);
                 alert('Failed to fetch course data');
@@ -140,9 +252,17 @@
         });
 
         document.addEventListener('click', function (event) {
-            if (!event.target.matches('.popup') && !event.target.matches('node')) {
-                document.getElementById('popup').style.display = 'none';
+            if (!event.target.matches('.popup') && !event.target.matches('circle')) {
+                popup.style.display = 'none';
             }
+        });
+
+        // Make graph responsive
+        window.addEventListener('resize', () => {
+            width = document.getElementById('graph').clientWidth;
+            height = document.getElementById('graph').clientHeight;
+            svg.attr("width", width).attr("height", height);
+            simulation.force("center", d3.forceCenter(width / 2, height / 2)).restart();
         });
     </script>
 </body>
