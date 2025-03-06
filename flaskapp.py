@@ -1,4 +1,4 @@
-from flask import Flask, render_template,request,jsonify,redirect
+from flask import Flask, render_template,request,jsonify,redirect,render_template_string
 from bs4 import BeautifulSoup
 import html
 import requests
@@ -19,9 +19,9 @@ def home():
 
 @app.route('/map/<dept>')
 def map(dept):
-    ch=process_prerequisites(get_all_courses_courseprereq_dict(dept),get_all_courses_with_names(dept))
-    ch_data = get_all_courses_courseprereq_dict(dept)
-    return render_template('indo.html',courseprereq=ch,coursedata=ch_data)
+    pp=process_prerequisites(get_all_courses_courseprereq_dict(dept),get_all_courses_with_names(dept))
+    pp_data = get_all_courses_courseprereq_dict(dept)
+    return render_template('index.html',courseprereq=pp,coursedata=pp_data)
 
 def get_all_courses_courseprereq_dict(dept,period='JAN-MAY 2025'):
     url = "https://academic.iitm.ac.in/load_record1.php"
@@ -237,7 +237,14 @@ def course():
 #GETTING CURRICULUM DICTS FOR SPECIFIC BRANCH AND DEGREE
 @app.route('/curriculum/2019_btech')
 def get_curriculum_2019btech():
-    return(redirect('https://www.iitm.ac.in/sites/default/files/Academic Curricula Files/B.Tech-Curriculum-2019.pdf'))
+    return render_template_string('''
+        <script>
+            window.open('https://www.iitm.ac.in/sites/default/files/Academic Curricula Files/B.Tech-Curriculum-2019.pdf', '_blank');
+            setTimeout(function() {
+                window.location.href = '/';
+            }, 1000);  // Delay of 100ms
+        </script>
+    ''')
 
 @app.route('/curriculum/2019_mtech')
 def get_curriculum_2019mtech():
@@ -445,7 +452,7 @@ def get_curriculum_oe_mtech_oceanstructures_s1():
 
     return(dict(data))
 
-@app.route('/curriculum/oe/mtech_oceanstructures_stream1')
+@app.route('/curriculum/oe/mtech_oceanstructures_stream2')
 def get_curriculum_oe_mtech_oceanstructures_s2():
     res = requests.get('https://doe.iitm.ac.in/courses/')
     raw_html = res.text
@@ -581,7 +588,7 @@ def get_curriculum_ed_iddd_ev_new():
 
 
 @app.route('/ikollege/NFC_expenditure')
-def expenditure():
+def expenditure(user_rollno,user_pw):
 
     # Firefox options (Optional: Run headless in background)
     options = Options()
@@ -592,45 +599,30 @@ def expenditure():
 
     driver.get("https://ikollege.iitm.ac.in/iitmhostel/login.do?method=userlogin&loginType=student")
 
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "loginid"))).send_keys("ed23b082")
-    driver.find_element(By.ID, "passwordid").send_keys('XNRA2DEkzgL')
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "loginid"))).send_keys(user_rollno)
+    driver.find_element(By.ID, "passwordid").send_keys(user_pw)
 
     # Click the login button
     login_button = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='Login']"))
     )
     login_button.click()
-
-
     customer_login = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.LINK_TEXT, "Click here to View the Food Court Report"))
         )
-
     current_url = driver.current_url
     customer_login.click()
-
-
     WebDriverWait(driver, 20).until(lambda d: d.current_url != current_url)
-
-    raw_html = driver.page_source  # Updated content
+    raw_html = driver.page_source  
     html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
-
-    with open('r2esp.html','w') as f:
-        f.write(html_data)
     soup = BeautifulSoup(html_data,'html.parser')
     table = soup.find('table')
-
-    # Extract headings
     headings = [th.text.strip() for th in table.find_all('th')]
-
-    # Extract rows (excluding the total row)
     rows = []
     for tr in table.find_all('tr'):
         cells = [td.text.strip() for td in tr.find_all('td')]
         if cells and "Total :" not in cells:
             rows.append(cells)
-
-    # Structure the data
     data = {
         "headings": headings,
         "rows": rows
