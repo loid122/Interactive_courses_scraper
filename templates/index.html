@@ -225,6 +225,35 @@
                     .on("end", dragended);
             }
 
+            const rainbowArc = svg.append("path")
+            .attr("d", d3.arc()
+                .innerRadius(boundaryRadius - 50)
+                .outerRadius(boundaryRadius)
+                .startAngle(0)
+                .endAngle(2 * Math.PI))
+            .attr("fill", "url(#rainbowGradient)")
+            .attr("transform", `translate(${centerX}, ${centerY})`)
+            .style("opacity", 0.7);
+
+        // Define Rainbow Gradient
+        const rainbowGradient = svg.append("defs")
+            .append("radialGradient")
+            .attr("id", "rainbowGradient")
+            .attr("fx", "50%")
+            .attr("fy", "50%")
+            .attr("r", "50%");
+
+        const colors = ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3"];
+
+        colors.forEach((color, i) => {
+            rainbowGradient.append("stop")
+                .attr("offset", `${(i / (colors.length - 1)) * 100}%`)
+                .attr("stop-color", color);
+        });
+
+
+
+
             // Popup functionality
             const popup = document.getElementById("popup");
 
@@ -285,35 +314,78 @@
                     // Highlight matching nodes
                     matchingNodes.forEach(matchingNode => {
                         const selectedNode = node.filter(d => d.id === matchingNode.id);
-                        selectedNode.select("circle")
-                            .style("fill", "#7f03fc") // Highlight matching node in black
-                            .attr("r", 40); // Increase size of matching node
-                    });
+                        const arcGroup = selectedNode.append("g")
+                        .attr("class", "rainbow-arc");
+
+                    arcGroup.append("path")
+                        .attr("d", d3.arc()
+                            .innerRadius(35) // Slightly larger than the node radius
+                            .outerRadius(45) // Arc thickness
+                            .startAngle(0)
+                            .endAngle(2 * Math.PI))
+                        .attr("fill", "url(#rainbowGradient)")
+                        .attr("transform", `translate(0, 0)`)
+                        .style("opacity", 1)
+                        .transition()
+                        .duration(2000)
+                        .ease(d3.easeLinear)
+                        .attrTween("transform", function () {
+                            return function (t) {
+                                return `rotate(${t * 360})`;
+                            };
+                        })
+                        .on("end", function () {
+                            d3.select(this).transition().attrTween("transform", function () {
+                                return function (t) {
+                                    return `rotate(${t * 360})`;
+                                };
+                            });
+                        });
+
+                    // Highlight node
+                    selectedNode.select("circle")
+                        .style("fill", "#7f03fc") // Highlight matching node in color
+                        .attr("r", 40); // Increase size of matching node
+                });
+
 
                     // Reset non-matching nodes
                     nonMatchingNodes.forEach(nonMatchingNode => {
-                        const selectedNode = node.filter(d => d.id === nonMatchingNode.id);
-                        selectedNode.select("circle")
-                            .style("fill", "#6FB1FC") // Reset non-matching nodes to default color
-                            .attr("r", 30); // Reset non-matching nodes to default size
-                    });
+                    const selectedNode = node.filter(d => d.id === nonMatchingNode.id);
+
+                    // Remove rainbow arc
+                    selectedNode.selectAll(".rainbow-arc").remove();
+
+                    // Reset node
+                    selectedNode.select("circle")
+                        .style("fill", "#6FB1FC") // Reset non-matching nodes to default color
+                        .attr("r", 30); // Reset non-matching nodes to default size
+                });
 
                     // Focus on the first matching node
-                    if (matchingNodes.length > 0) {
+                    if (matchingNodes.length == 1) {
                         const firstMatch = matchingNodes[0];
                         const [x, y] = [firstMatch.x, firstMatch.y];
+                        
+                        const zoom = d3.zoom()
+                            .scaleExtent([1, 5]); // Set min/max zoom levels if needed
+                        
+                        svg.call(zoom); // Ensure zoom behavior is applied to the SVG
+                        
                         svg.transition()
                             .duration(750)
                             .call(
-                                d3.zoom().transform,
-                                d3.zoomIdentity.translate(width / 2 - x, height / 2 - y).scale(2)
+                                zoom.transform, // Ensure you use the same zoom instance
+                                d3.zoomIdentity.translate(width / 2 - x * 2, height / 2 - y * 2).scale(2)
                             );
                     }
                 } else {
                     // If search box is cleared, reset all nodes
                     node.select("circle")
                         .style("fill", "#6FB1FC") // Reset all nodes to default color
-                        .attr("r", 30); // Reset all nodes to default size
+                        .attr("r", 30);
+                        
+                    node.selectAll(".rainbow-arc").remove(); // Reset all nodes to default size
                 }
             });
 
