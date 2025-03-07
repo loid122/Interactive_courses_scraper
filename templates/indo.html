@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curriculum Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Curriculum Finder</h1>
+        <select id="curriculumDropdown">
+            <!-- Static PDF links -->
+            <option value="https://www.iitm.ac.in/sites/default/files/Academic%20Curricula%20Files/B.Tech-Curriculum-2019.pdf">B.Tech</option>
+            <option value="https://www.iitm.ac.in/sites/default/files/Academic%20Curricula%20Files/DualDegree-Curriculum-2019.pdf">M.Tech</option>
+            <option value="https://www.ee.iitm.ac.in/eeimg/UG-curriculum_2023_and_older_batches.pdf">EE OLD</option>
+            <option value="https://www.ee.iitm.ac.in/eeimg/UG-curriculum_2024_onward_batches.pdf">EE NEW</option>
+            <option value="https://ae.iitm.ac.in/documents/BT_curriculum.pdf">AE BTECH</option>
+            <option value="https://ae.iitm.ac.in/documents/BTech_dd_ae_2015_batch.pdf">AE DUAL</option>
+            <option value="https://physics.iitm.ac.in/dashboard/download/EP_curriculum_official.pdf">EP BTECH</option>
+            <option value="https://physics.iitm.ac.in/dashboard/download/DD_curriculum_official.pdf">EP DUAL</option>
+            <option value="https://civil.iitm.ac.in//admin/coursedetailimage/2022 Batch - B.Tech Curriculum.pdf">CIVIL 22 BTECH</option>
+            <option value="https://civil.iitm.ac.in//admin/coursedetailimage/2022 Batch - MTech Curriculum.pdf">CIVIL 22 MTECH</option>
+            <option value="https://civil.iitm.ac.in//admin/coursedetailimage/B.Tech 2024 curriculum.pdf">CIVIL 24 BTECH</option>
+            <option value="https://ed.iitm.ac.in/img/files/Revised curriculum Auto from July 2019 Batch 22.06.2021.pdf">ED AUTO OLD</option>
+            <option value="https://ed.iitm.ac.in/img/files/ED_Automotive_DD_Credit_2024_Batch_Onward.pdf">ED AUTO NEW</option>
+            <option value="https://ed.iitm.ac.in/img/files/Revised curriculum Bio from July 2019 Batch 22.06.21.pdf">ED BIO OLD</option>
+            <option value="https://ed.iitm.ac.in/img/files/ED_Biomedical_DD_Credit_2024_Batch_Onward.pdf">ED BIO NEW</option>
+            <option value="https://ed.iitm.ac.in/img/files/IDDD.pdf">ED IDDD ROBO OLD</option>
+            <option value="https://ed.iitm.ac.in/img/files/IDDD_Robotics_2025.pdf">ED IDDD ROBO NEW</option>
+            <option value="https://ed.iitm.ac.in/img/files/IDDD-EV-Curriculum_Senate_Approved_Jan_2022.pdf">ED IDDD EV OLD</option>
+            <option value="https://ed.iitm.ac.in/img/files/IDDD-EV-Curriculum_2025_Onward.pdf">ED IDDD EV NEW</option>
+
+            <!-- Dynamic curriculum options -->
+            <option value="oe/btech">OE B.TECH Curriculum</option>
+            <option value="oe/bmtech">OE B.TECH & M.TECH Curriculum</option>
+            <option value="oe/mtech_oceanstructures_stream1">OE M.TECH OCEAN STRUCTURES STREAM-1</option>
+            <option value="oe/mtech_oceanstructures_stream2">OE M.TECH OCEAN STRUCTURES STREAM-2</option>
+            <option value="oe/mtech_oceantech">OE M.TECH OCEAN TECHNOLOGY</option>
+            <option value="oe/mtech_petroleum">OE M.TECH PETROLEUM</option>
+        </select>
+        <button onclick="handleSelection()">Find</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='1.js') }}"></script>
+</body>
+
+</html>

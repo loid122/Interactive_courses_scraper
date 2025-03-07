@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <style>
+    /* General Styles */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    .dashboard {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      color: #2c3e50;
+    }
+
+    header input {
+      padding: 10px;
+      width: 300px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .widget {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .widget h2 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: #34495e;
+    }
+
+    .widget ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .widget ul li {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .widget input {
+      padding: 10px;
+      width: calc(100% - 80px);
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .widget button {
+      padding: 10px 15px;
+      background: #3498db;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .widget button:hover {
+      background: #2980b9;
+    }
+
+    #time {
+      font-size: 2rem;
+      text-align: center;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Header -->
+    <header>
+      <h1>Welcome, Student!</h1>
+      <input type="text" placeholder="Search...">
+    </header>
+
+    <!-- Main Content -->
+    <main>
+      <!-- Class Schedule -->
+      <section class="widget schedule">
+        <h2>Class Schedule</h2>
+        <ul>
+          <li>Math - 9:00 AM</li>
+          <li>Science - 11:00 AM</li>
+          <li>History - 1:00 PM</li>
+          <li>English - 3:00 PM</li>
+        </ul>
+      </section>
+
+      <!-- To-Do List -->
+      <section class="widget todo">
+        <h2>To-Do List</h2>
+        <input type="text" id="taskInput" placeholder="Add a task...">
+        <button onclick="addTask()">Add</button>
+        <ul id="taskList"></ul>
+      </section>
+
+      <!-- Motivational Quote -->
+      <section class="widget quote">
+        <h2>Motivational Quote</h2>
+        <p id="quoteText">"The future belongs to those who believe in the beauty of their dreams."</p>
+        <button onclick="newQuote()">New Quote</button>
+      </section>
+
+      <!-- Study Timer -->
+      <section class="widget timer">
+        <h2>Study Timer</h2>
+        <p id="time">25:00</p>
+        <button onclick="startTimer()">Start</button>
+        <button onclick="resetTimer()">Reset</button>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // To-Do List Functionality
+    function addTask() {
+      const taskInput = document.getElementById("taskInput");
+      const taskList = document.getElementById("taskList");
+
+      if (taskInput.value.trim() !== "") {
+        const li = document.createElement("li");
+        li.textContent = taskInput.value;
+        taskList.appendChild(li);
+        taskInput.value = "";
+      }
+    }
+
+    // Motivational Quotes
+    const quotes = [
+      "The future belongs to those who believe in the beauty of their dreams.",
+      "Success is the sum of small efforts, repeated day in and day out.",
+      "Don't watch the clock; do what it does. Keep going.",
+      "Believe you can and you're halfway there.",
+    ];
+
+    function newQuote() {
+      const quoteText = document.getElementById("quoteText");
+      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      quoteText.textContent = `"${randomQuote}"`;
+    }
+
+    // Study Timer (Pomodoro)
+    let timer;
+    let timeLeft = 1500; // 25 minutes in seconds
+
+    function startTimer() {
+      timer = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      document.getElementById("time").textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+      if (timeLeft === 0) {
+        clearInterval(timer);
+        alert("Time's up! Take a break.");
+      } else {
+        timeLeft--;
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timeLeft = 1500;
+      document.getElementById("time").textContent = "25:00";
+    }
+  </script>
+</body>
+</html>
