@@ -32,22 +32,20 @@ def login():
         session['username'] = request.form['username']
         user_rollno = request.form['username']
         user_pw = request.form['password']
-        session['username'] = user_rollno
-        session['password'] = user_pw
         options = Options()
         options.add_argument("--headless")
         driver = webdriver.Firefox(options=options)
         driver.get("https://www.iitm.ac.in/viewgrades/")
+        print('opened website')
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "username"))).send_keys(user_rollno)
         driver.find_element(By.ID, "password").send_keys(user_pw)
-
-        # Click the login button
+        print('entered data')
         login_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='LogIn']"))
         )
         current_url = driver.current_url
         login_button.click()
-
+        print('logged in!')
         if (lambda d: d.current_url != current_url):
             flash('Login successful!', 'success')
             return redirect('/dashboard')
@@ -739,99 +737,104 @@ def get_curriculum_ed_iddd_ev_new():
 
 @app.route('/ikollege/NFC_expenditure')
 def expenditure(user_rollno,user_pw):
+    if 'username' in session:
+        # Firefox options (Optional: Run headless in background)
+        options = Options()
+        options.add_argument("--headless")  # Uncomment for headless mode
 
-    # Firefox options (Optional: Run headless in background)
-    options = Options()
-    options.add_argument("--headless")  # Uncomment for headless mode
+        # Initialize driver
+        driver = webdriver.Firefox(options=options)
 
-    # Initialize driver
-    driver = webdriver.Firefox(options=options)
+        driver.get("https://ikollege.iitm.ac.in/iitmhostel/login.do?method=userlogin&loginType=student")
 
-    driver.get("https://ikollege.iitm.ac.in/iitmhostel/login.do?method=userlogin&loginType=student")
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "loginid"))).send_keys(user_rollno)
+        driver.find_element(By.ID, "passwordid").send_keys(user_pw)
 
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "loginid"))).send_keys(user_rollno)
-    driver.find_element(By.ID, "passwordid").send_keys(user_pw)
-
-    # Click the login button
-    login_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='Login']"))
-    )
-    login_button.click()
-    customer_login = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.LINK_TEXT, "Click here to View the Food Court Report"))
+        # Click the login button
+        login_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='Login']"))
         )
-    current_url = driver.current_url
-    customer_login.click()
-    WebDriverWait(driver, 20).until(lambda d: d.current_url != current_url)
-    raw_html = driver.page_source  
-    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
-    soup = BeautifulSoup(html_data,'html.parser')
-    table = soup.find('table')
-    headings = [th.text.strip() for th in table.find_all('th')]
-    rows = []
-    for tr in table.find_all('tr'):
-        cells = [td.text.strip() for td in tr.find_all('td')]
-        if cells and "Total :" not in cells:
-            rows.append(cells)
-    data = {
-        "headings": headings,
-        "rows": rows
-    }
-    driver.quit()
-    return(data)
+        login_button.click()
+        customer_login = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.LINK_TEXT, "Click here to View the Food Court Report"))
+            )
+        current_url = driver.current_url
+        customer_login.click()
+        WebDriverWait(driver, 20).until(lambda d: d.current_url != current_url)
+        raw_html = driver.page_source  
+        html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+        soup = BeautifulSoup(html_data,'html.parser')
+        table = soup.find('table')
+        headings = [th.text.strip() for th in table.find_all('th')]
+        rows = []
+        for tr in table.find_all('tr'):
+            cells = [td.text.strip() for td in tr.find_all('td')]
+            if cells and "Total :" not in cells:
+                rows.append(cells)
+        data = {
+            "headings": headings,
+            "rows": rows
+        }
+        driver.quit()
+        return(data)
+    else:
+        return(redirect('/'))
 
 @app.route('/viewgrades')
 def viewgrades(user_rollno,user_pw):
-    options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
+    if 'username' in session:
 
-    driver.get("https://www.iitm.ac.in/viewgrades/")
+        options = Options()
+        options.add_argument("--headless")
+        driver = webdriver.Firefox(options=options)
 
-    # Input credentials
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "username"))).send_keys(user_rollno)
-    driver.find_element(By.ID, "password").send_keys(user_pw)
+        driver.get("https://www.iitm.ac.in/viewgrades/")
 
-    # Click the login button
-    login_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='LogIn']"))
-    )
-    current_url = driver.current_url
-    login_button.click()
+        # Input credentials
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "username"))).send_keys(user_rollno)
+        driver.find_element(By.ID, "password").send_keys(user_pw)
 
-    WebDriverWait(driver, 20).until(lambda d: d.current_url != current_url)
+        # Click the login button
+        login_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='LogIn']"))
+        )
+        current_url = driver.current_url
+        login_button.click()
 
-    raw_html = driver.page_source  # Updated content
-    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
-    soup = BeautifulSoup(html_data,'html.parser')
+        WebDriverWait(driver, 20).until(lambda d: d.current_url != current_url)
 
-    headers = [th.get_text(strip=True) for th in soup.find_all('th')]
+        raw_html = driver.page_source  # Updated content
+        html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+        soup = BeautifulSoup(html_data,'html.parser')
 
-    # Initialize output
-    output = {}
+        headers = [th.get_text(strip=True) for th in soup.find_all('th')]
 
-    # Find all semesters and corresponding tables
-    semester_tables = soup.find_all('table')[1:]  # Ignore first table (header)
+        # Initialize output
+        output = {}
 
-    current_semester = None
-    for table in semester_tables:
-        rows = table.find_all('tr')
+        # Find all semesters and corresponding tables
+        semester_tables = soup.find_all('table')[1:]  # Ignore first table (header)
 
-        for row in rows:
-            cols = [td.get_text(strip=True) for td in row.find_all('td')]
+        current_semester = None
+        for table in semester_tables:
+            rows = table.find_all('tr')
 
-            # Identify semester row
-            if len(cols) == 1 and 'Semester' in cols[0]:
-                current_semester = cols[0]
-                output[current_semester] = {}
+            for row in rows:
+                cols = [td.get_text(strip=True) for td in row.find_all('td')]
 
-            # Regular course rows
-            elif len(cols) == 7 and current_semester:
-                course_no = cols[1]
-                output[current_semester][course_no] = cols[2:]
-    driver.quit()        
-    return(output)
+                # Identify semester row
+                if len(cols) == 1 and 'Semester' in cols[0]:
+                    current_semester = cols[0]
+                    output[current_semester] = {}
 
+                # Regular course rows
+                elif len(cols) == 7 and current_semester:
+                    course_no = cols[1]
+                    output[current_semester][course_no] = cols[2:]
+        driver.quit()        
+        return(output)
+    else:
+        return(redirect('/'))
 
 
 if __name__ == '__main__':
