@@ -1,4 +1,4 @@
-from flask import Flask, render_template,request,jsonify,redirect,render_template_string
+from flask import Flask, render_template,request,jsonify,redirect,render_template_string,abort,flash,url_for,session
 from bs4 import BeautifulSoup
 import html
 import requests
@@ -10,18 +10,122 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+import pprint
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'
+
+
 @app.route('/')
 def home():
-    return('THE HOME PAGE IS HERE! ')
+    if 'username' in session:
+        return f'Logged in as {session["username"]}'
+    return 'You are not logged in. <a href="/login">Login</a>'
+    return('HEY , YOU MADE IT !!!')
+
+
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        session['username'] = request.form['username']
+        user_rollno = request.form['username']
+        user_pw = request.form['password']
+        session['username'] = user_rollno
+        session['password'] = user_pw
+        options = Options()
+        options.add_argument("--headless")
+        driver = webdriver.Firefox(options=options)
+        driver.get("https://www.iitm.ac.in/viewgrades/")
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "username"))).send_keys(user_rollno)
+        driver.find_element(By.ID, "password").send_keys(user_pw)
+
+        # Click the login button
+        login_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='LogIn']"))
+        )
+        current_url = driver.current_url
+        login_button.click()
+
+        if (lambda d: d.current_url != current_url):
+            flash('Login successful!', 'success')
+            return redirect('/dashboard')
+        else:
+            flash('Invalid username or password', 'error')
+            return(render_template('login.html'))
+    return(render_template('login.html'))
+
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return(redirect('/'))
+
+@app.route('/dashboard')
+def userdashboard():
+    if 'username' in session:
+        return(render_template('dashboard.html'))
+    else:
+        return(redirect('/'))
+
+
+@app.route('/findcurriculum')
+def findcurriculum():
+    return(render_template('indo.html'))
 
 @app.route('/map/<dept>')
 def map(dept):
-    pp=process_prerequisites(get_all_courses_courseprereq_dict(dept),get_all_courses_with_names(dept))
-    pp_data = get_all_courses_courseprereq_dict(dept)
+    if dept.lower() in ['cs','ee','me','ed','mm','oe','ch','cy','ma','ce','ae','bt']:
+        pp=process_prerequisites(get_all_courses_courseprereq_dict(dept),get_all_courses_with_names(dept))
+        pp_data = get_all_courses_courseprereq_dict(dept)
+    elif dept in ['ph','ep']:
+        pp=process_prerequisites(get_all_courses_courseprereq_dict('ph'),get_all_courses_with_names_for_ep('ph'))
+        pp_data = get_all_courses_courseprereq_dict('dept')
+    else:
+        abort(404)
     return render_template('index.html',courseprereq=pp,coursedata=pp_data)
+
+def get_all_courses_with_names_for_ep(dept,period='JAN-MAY 2025'):
+
+    url = "https://academic.iitm.ac.in/load_record1.php"
+    headers = {
+        "Host": "academic.iitm.ac.in",  
+        "Sec-Ch-Ua-Platform": "\"Windows\"",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Ch-Ua": "\"Chromium\";v=\"133\", \"Not(A:Brand\";v=\"99\"",
+        "Sec-Ch-Ua-Mobile": "?0",
+        "X-Requested-With": "XMLHttpRequest",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Origin": "https://academic.iitm.ac.in",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Dest": "empty",
+        "Referer": "https://academic.iitm.ac.in/slotwise1.php",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Priority": "u=1, i",
+        "Connection": "keep-alive",
+    }
+
+    data = {
+        "pid": "Slot",
+        "peroid_wise": period,
+        "dept_code": dept
+    }
+
+    response = requests.post(url, headers=headers, data=data)
+
+    raw_html = (response.text)  # Print response content
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+    details = {}
+    for row in soup.find_all("tr"):
+        columns = row.find_all("td")
+        if len(columns) > 3:
+            details[columns[3].text.strip()] = {"Course Name": columns[4].text.strip()}
+    return (details) if details else None
 
 def get_all_courses_courseprereq_dict(dept,period='JAN-MAY 2025'):
     url = "https://academic.iitm.ac.in/load_record1.php"
@@ -62,6 +166,7 @@ def get_all_courses_courseprereq_dict(dept,period='JAN-MAY 2025'):
         columns = row.find_all("td")
         if len(columns) > 9:  # Ensure enough columns exist
             course_prereq[columns[3].text.strip()]=columns[9].text.strip()
+    #print('get_all_courses_courseprereq_dict working')
     return(course_prereq)
 '''
 def get_all_courses_prereq(dept,period='JAN-MAY 2025'):
@@ -150,7 +255,9 @@ def get_specific_course_details(courseid,dept,period='JAN-MAY 2025'):
                 "tobematchedprereq": columns[9].text.strip(),
                 "Offered for BTech": columns[12].text.strip()
             }
+            #print('getspecificcourse working')
             return details  # Return details as a dictionary
+    #print('course no not found')    
     return None  # Return None if course number is not found
 
 def get_all_courses_with_names(dept,period='JAN-MAY 2025'):
@@ -193,8 +300,9 @@ def get_all_courses_with_names(dept,period='JAN-MAY 2025'):
                 (columns[3].text.strip):{"Course Name": columns[4].text.strip()}
 
             }
+            #print('get_all_courses_with_names working')
             return details  # Return details as a dictionary
-    return None  # Return None if course number is not found
+    return None  
 
 
 def process_prerequisites(all_courses_prereq_dict, all_courses_with_names_dict):
@@ -228,23 +336,26 @@ def process_prerequisites(all_courses_prereq_dict, all_courses_with_names_dict):
 def course():
     c_id = request.json.get('courseid')
     if type(c_id)==type('a'):
-        print((get_specific_course_details(c_id,c_id[:2])))
-        return(jsonify(get_specific_course_details(c_id,c_id[:2])))
+        if c_id[:2]=='AS':
+            return(jsonify(get_specific_course_details(c_id,'AE')))
+        elif c_id[:2]=='EP':
+            return(jsonify(get_specific_course_details(c_id,'PH')))
         
+        elif c_id[:2]=='EP':
+            return(jsonify(get_specific_course_details(c_id,'PH')))
+        
+        elif c_id[:2]=='CA':
+            return(jsonify(get_specific_course_details(c_id,'CH')))
+
+
+        return(jsonify(get_specific_course_details(c_id,c_id[:2])))  
     else:
         return (jsonify({'error':'courseid not string'}))
 
 #GETTING CURRICULUM DICTS FOR SPECIFIC BRANCH AND DEGREE
 @app.route('/curriculum/2019_btech')
 def get_curriculum_2019btech():
-    return render_template_string('''
-        <script>
-            window.open('https://www.iitm.ac.in/sites/default/files/Academic Curricula Files/B.Tech-Curriculum-2019.pdf', '_blank');
-            setTimeout(function() {
-                window.location.href = '/';
-            }, 1000);  // Delay of 100ms
-        </script>
-    ''')
+    return(redirect('https://www.iitm.ac.in/sites/default/files/Academic Curricula Files/B.Tech-Curriculum-2019.pdf'))
 
 @app.route('/curriculum/2019_mtech')
 def get_curriculum_2019mtech():
@@ -276,8 +387,7 @@ def get_curriculum_cs():
 
                 if course_code:  
                     result[semester][course_code] = [course_title, credits, category]
-
-    return(result)  # Final nested dict
+    return(jsonify(result))  # Final nested dict
 
 @app.route('/curriculum/me')
 def get_curriculum_me():
@@ -309,7 +419,7 @@ def get_curriculum_me():
                 category = cells[9]
                 result[current_sem][course_code] = [course_name, credits, category]
 
-    return(result)  # Final mech dictionary for old curriculum
+    return(jsonify(result))  # Final mech dictionary for old curriculum
 
 @app.route('/curriculum/ee/old')
 def get_curriculum_ee_old():
@@ -352,8 +462,10 @@ def get_curriculum_oe():
     res = requests.get('https://doe.iitm.ac.in/courses/')
     raw_html = res.text
     html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
-    soup = BeautifulSoup(html_data,'html.parser')
+    soup = BeautifulSoup(html_data, 'html.parser')
     target_section = None
+
+    # Locate the target section
     for section in soup.find_all('div', class_='su-spoiler-title'):
         if 'B.Tech (Naval Architecture & Ocean Engineering Syllabus)' in section.text:
             target_section = section.find_next_sibling('div')
@@ -361,6 +473,7 @@ def get_curriculum_oe():
 
     # Extract data only from the target section
     data = defaultdict(lambda: defaultdict(list))
+    unknown_count = 1
 
     if target_section:
         for pane in target_section.find_all('div', class_='su-tabs-pane'):
@@ -371,15 +484,34 @@ def get_curriculum_oe():
 
                 # Skip rows without enough columns or header rows
                 if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
-                    course_code = cells[0].text.strip()
-                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
-                    credits = cells[7].text.strip()  # 'Cr' value
-                    category = cells[8].text.strip() # 'Cat' value
 
-                    # Store the required information
+                    # Helper function to extract text or provide placeholder
+                    def get_text_or_dash(cell):
+                        return cell.a.text.strip() if cell.a else (cell.text.strip() or '-')
+
+                    # Extract values, replacing empty ones with '-'
+                    course_code = get_text_or_dash(cells[0])
+                    course_title = get_text_or_dash(cells[1])
+                    credits = get_text_or_dash(cells[7])
+                    category = get_text_or_dash(cells[8])
+
+                    # Skip rows where course title is '-'
+                    if course_title == '-':
+                        continue
+
+                    # Ensure course_code has a placeholder if empty
+                    if course_code == '-':
+                        course_code = f"XXXXXX-{unknown_count}"
+                        unknown_count += 1
+
+                    # Replace 'Total' with '~' in course_code
+                    if course_title == 'Total':
+                        course_code = '~'
+
+                    # Store the extracted information
                     data[semester][course_code] = [course_title, credits, category]
 
-    return(dict(data))
+    return jsonify(data)
 
 @app.route('/curriculum/oe/bmtech')
 def get_curriculum_oe_bmtech():
@@ -416,7 +548,7 @@ def get_curriculum_oe_bmtech():
                     # Store the required information
                     data[semester][course_code] = [course_title, credits, category]
 
-    return(dict(data))
+    return(jsonify(data))
 
 @app.route('/curriculum/oe/mtech_oceanstructures_stream1')
 def get_curriculum_oe_mtech_oceanstructures_s1():
@@ -442,15 +574,19 @@ def get_curriculum_oe_mtech_oceanstructures_s1():
 
                 # Skip rows without enough columns or header rows
                 if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
-                    course_code = cells[0].text.strip()
-                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
-                    credits = cells[7].text.strip()  # 'Cr' value
-                    category = cells[8].text.strip() # 'Cat' value
-
+                    course_code = cells[1].text.strip()
+                    course_title = cells[2].a.text.strip() if cells[2].a else cells[2].text.strip()
+                    credits = cells[8].text.strip()  # 'Cr' value
+                    #category = cells[8].text.strip() # 'Cat' value
+                    
+                    if course_title == 'Total Credits :':
+                        course_code='~'
+                    if course_title.startswith('SEMESTER'):
+                        continue
                     # Store the required information
-                    data[semester][course_code] = [course_title, credits, category]
+                    data[semester][course_code] = [course_title, credits,'']
 
-    return(dict(data))
+    return(jsonify(data))
 
 @app.route('/curriculum/oe/mtech_oceanstructures_stream2')
 def get_curriculum_oe_mtech_oceanstructures_s2():
@@ -476,15 +612,19 @@ def get_curriculum_oe_mtech_oceanstructures_s2():
 
                 # Skip rows without enough columns or header rows
                 if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
-                    course_code = cells[0].text.strip()
-                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
-                    credits = cells[7].text.strip()  # 'Cr' value
-                    category = cells[8].text.strip() # 'Cat' value
-
+                    course_code = cells[1].text.strip()
+                    course_title = cells[2].a.text.strip() if cells[2].a else cells[2].text.strip()
+                    credits = cells[8].text.strip()  # 'Cr' value
+                    #category = cells[8].text.strip() # 'Cat' value
+                    
+                    if course_title == 'Total Credits :':
+                        course_code='~'
+                    if course_title.startswith('SEMESTER'):
+                        continue
                     # Store the required information
-                    data[semester][course_code] = [course_title, credits, category]
+                    data[semester][course_code] = [course_title, credits,'']
 
-    return(dict(data))
+    return(jsonify(data))
     
 @app.route('/curriculum/oe/mtech_oceantech')
 def get_curriculum_oe_mtech_oceantech():
@@ -510,15 +650,19 @@ def get_curriculum_oe_mtech_oceantech():
 
                 # Skip rows without enough columns or header rows
                 if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
-                    course_code = cells[0].text.strip()
-                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
-                    credits = cells[7].text.strip()  # 'Cr' value
-                    category = cells[8].text.strip() # 'Cat' value
-
+                    course_code = cells[1].text.strip()
+                    course_title = cells[2].a.text.strip() if cells[2].a else cells[2].text.strip()
+                    credits = cells[8].text.strip()  # 'Cr' value
+                    #category = cells[8].text.strip() # 'Cat' value
+                    
+                    if course_title == 'Total Credits :':
+                        course_code='~'
+                    if course_title.startswith('SEMESTER'):
+                        continue
                     # Store the required information
-                    data[semester][course_code] = [course_title, credits, category]
+                    data[semester][course_code] = [course_title, credits,'']
 
-    return(dict(data))
+    return(jsonify(data))
 
 @app.route('/curriculum/oe/mtech_petroleum')
 def get_curriculum_oe_mtech_petroleum():
@@ -544,15 +688,21 @@ def get_curriculum_oe_mtech_petroleum():
 
                 # Skip rows without enough columns or header rows
                 if len(cells) >= 9 and not cells[0].text.strip().lower().startswith("course"):
-                    course_code = cells[0].text.strip()
-                    course_title = cells[1].a.text.strip() if cells[1].a else cells[1].text.strip()
-                    credits = cells[7].text.strip()  # 'Cr' value
-                    category = cells[8].text.strip() # 'Cat' value
-
+                    course_code = cells[1].text.strip()
+                    course_title = cells[2].a.text.strip() if cells[2].a else cells[2].text.strip()
+                    credits = cells[8].text.strip()  # 'Cr' value
+                    #category = cells[8].text.strip() # 'Cat' value
+                    
+                    if course_title == 'Total Credits :':
+                        course_code='~'
+                    if course_title.startswith('SEMESTER'):
+                        continue
                     # Store the required information
-                    data[semester][course_code] = [course_title, credits, category]
+                    data[semester][course_code] = [course_title, credits,'']
 
-    return(dict(data))
+    return(jsonify(data))
+
+
 
 @app.route('/curriculum/ed/auto_old')
 def get_curriculum_ed_auto_old():
