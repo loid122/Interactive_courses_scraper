@@ -46,7 +46,7 @@ def login():
         current_url = driver.current_url
         login_button.click()
         print('logged in!')
-        if (lambda d: d.current_url != current_url):
+        if (driver.current_url != current_url):
             flash('Login successful!', 'success')
             return redirect('/dashboard')
         else:
