@@ -10,18 +10,21 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import pprint
+import base64
+import time 
+import json
+import jwt
+import datetime
+
+SECRET_KEY = 'your_secret_key'
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = "your_secret_key_here" 
 
 
 @app.route('/')
 def home():
-    if 'username' in session:
-        return f'Logged in as {session["username"]}'
-    return 'You are not logged in. <a href="/login">Login</a>'
-    return('HEY , YOU MADE IT !!!')
+    return(render_template('home.html'))
 
 
 
@@ -29,43 +32,80 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        session['username'] = request.form['username']
         user_rollno = request.form['username']
         user_pw = request.form['password']
-        options = Options()
-        options.add_argument("--headless")
-        driver = webdriver.Firefox(options=options)
-        driver.get("https://www.iitm.ac.in/viewgrades/")
-        print('opened website')
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "username"))).send_keys(user_rollno)
-        driver.find_element(By.ID, "password").send_keys(user_pw)
-        print('entered data')
-        login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//input[@type='submit' and @value='LogIn']"))
-        )
-        current_url = driver.current_url
-        login_button.click()
-        print('logged in!')
-        if (driver.current_url != current_url):
+
+        url = "https://ssp.iitm.ac.in/api/login"
+
+        headers = {
+            "Host": "ssp.iitm.ac.in",
+            "Sec-Ch-Ua-Platform": "\"Windows\"",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "application/json, text/plain, */*",
+            "Sec-Ch-Ua": "\"Chromium\";v=\"133\", \"Not(A:Brand\";v=\"99\"",
+            "Content-Type": "application/json",
+            "Sec-Ch-Ua-Mobile": "?0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+            "Origin": "https://ssp.iitm.ac.in",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Dest": "empty",
+            "Referer": "https://ssp.iitm.ac.in/",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Priority": "u=1, i",
+            "Connection": "keep-alive"
+        }
+
+        val = '{"user_id":"'+ user_rollno +'","password":"' + user_pw + '","student":true,"professor":false,"non_iitm":false,"new_admission":false,"summer_fellowship":false}'
+        val_2 = base64.b64encode(val.encode()).decode()
+
+        payload = {"data": val_2}
+
+        response = requests.post(url, headers=headers, json=payload)
+        if 'login successful' in response.text:
+            payload = {
+            'user_id': user_rollno,   #unique id for an account
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1) 
+            }
+            token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+
             flash('Login successful!', 'success')
-            return redirect('/dashboard')
+            return jsonify({'token': token, 'redirect_url': url_for('userdashboard')})
         else:
             flash('Invalid username or password', 'error')
-            return(render_template('login.html'))
-    return(render_template('login.html'))
+            return redirect(url_for('login'))
+    elif request.method=='GET':
+        return(render_template('login.html'))
+    else:
+        abort(405)
 
 
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    return(redirect('/'))
 
 @app.route('/dashboard')
 def userdashboard():
-    if 'username' in session:
-        return(render_template('dashboard.html'))
-    else:
-        return(redirect('/'))
+    token = request.headers.get('Authorization')
+    if not token:
+        return redirect('/login')
+    
+    try:
+        # Remove "Bearer " prefix if present
+        if token.startswith('Bearer '):
+            token = token.split(' ')[1]
+
+        # Decode and validate the token
+        data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        user_id = data['user_id']
+
+        # Successful response
+        return render_template('dashboard.html', user_id=user_id)
+
+    except jwt.ExpiredSignatureError:
+        flash('Token has expired', 'error')
+        return redirect(url_for('login'))
+    except jwt.InvalidTokenError:
+        flash('Invalid token', 'error')
+        return redirect(url_for('login'))
+
 
 
 @app.route('/findcurriculum')
@@ -837,5 +877,59 @@ def viewgrades(user_rollno,user_pw):
         return(redirect('/'))
 
 
+@app.route('/attendance')
+def attendance(user_rollno,user_digi_pw):
+    options = Options()
+   # options.add_argument("--headless")
+    driver = webdriver.Firefox(options=options)
+    driver.get("https://iitm.digiicampus.com/home")
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[data-cy="loginform.email"]'))).send_keys(user_rollno)
+    driver.find_element(By.CSS_SELECTOR, 'input[data-cy="loginform.pwd"]').send_keys(user_digi_pw)
+    print('entered data')
+    sign_in_button = driver.find_element(By.CSS_SELECTOR, 'button[data-cy="loginform.signIn"]')
+    sign_in_button.click()
+    print('logged in!')
+    time.sleep(5)
+    # Get all cookies
+    cookies = driver.get_cookies()
+    #print("All Cookies (after delay):", cookies)
+    cookie = (cookies[-1])
+    val = (cookie['value'])
+    def decode_jwt(token):
+        header, payload, _ = token.split('.')
+        decoded_header = json.loads(base64.urlsafe_b64decode(header + '==').decode())
+        decoded_payload = json.loads(base64.urlsafe_b64decode(payload + '==').decode())
+        return(decoded_payload['ukid'])
+    uid = decode_jwt(val)
+    driver.get("https://iitm.digiicampus.com/userProfileCard/academics/"+str(uid))
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+    time.sleep(5)  # Allow JS to load (adjust as needed)
+    driver.execute_script("return document.readyState == 'complete'")
+    raw_html = driver.page_source
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    #pprint.pprint(html_data)
+    soup = BeautifulSoup(html_data, 'html.parser')
+    # Extract Total Sessions, Present, and Absent
+    attendance_data = {}
+    attendance_divs = soup.find_all('div', class_='att-total-count')
+    for div in attendance_divs:
+        label = div.find('div', class_='col-xs-4').text.strip()
+        value = div.find('div', class_='ng-binding').text.strip()
+        attendance_data[label] = value
+    #print(attendance_data)
+
+    # Extract course data
+    course_data = {}
+    course_rows = soup.find_all('div', class_='att-agg-course-header')
+    for row in course_rows:
+        course_name = row.find('div', class_='col-xs-4').text.strip()
+        attended = row.find_all('div', class_='col-xs-2 text-center ng-binding')[0].text.strip()
+        scheduled = row.find_all('div', class_='col-xs-2 text-center ng-binding')[1].text.strip()
+        percentage = row.find_all('div', class_='col-xs-2 text-center ng-binding')[2].text.strip()
+        course_data[course_name] = [attended, scheduled, percentage]
+    #print(course_data)
+
+    result = {attendance_data,course_data}
+    return render_template('attendance.html', data=result)
 if __name__ == '__main__':
     app.run(debug=True)
