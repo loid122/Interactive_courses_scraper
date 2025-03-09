@@ -3,57 +3,168 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Dashboard</title>
+  <title>Futuristic Student Dashboard - IITM</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
   <style>
     /* General Styles */
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f9;
-      color: #333;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      color: white;
       margin: 0;
       padding: 0;
+      overflow-x: hidden;
+      position: relative;
     }
 
-    .dashboard {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
+    a {
+      text-decoration: none;
+      color: inherit;
     }
 
+    /* Animated Background */
+    @keyframes moveSnowflakes {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(100vh);
+    }
+    }
+
+
+    @keyframes moveMeteor {
+      from {
+        transform: translateX(-100%) translateY(-100%);
+      }
+      to {
+        transform: translateX(100vw) translateY(100vh);
+      }
+    }
+
+    .snowflakes, .meteors {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .snowflakes {
+    background: url('/static/images/snowflake.svg') no-repeat center center;
+    background-size: contain; /* Ensure the image scales properly */
+    position: absolute;
+    width: 3%; /* Relative size (3% of container width) */
+    height: 3%; /* Keep aspect ratio */
+    animation: moveSnowflakes 20s linear infinite; /* Smooth falling animation */
+    }
+
+    /* Random Snowflake Positions */
+    .snowflake1 { top: 5%; left: 10%; }
+    .snowflake2 { top: 15%; left: 30%; }
+    .snowflake3 { top: 25%; left: 50%; }
+    .snowflake4 { top: 35%; left: 70%; }
+    .snowflake5 { top: 45%; left: 90%; }
+    .snowflake6 { top: 55%; left: 20%; }
+    .snowflake7 { top: 65%; left: 40%; }
+    .snowflake8 { top: 75%; left: 60%; }
+    .snowflake9 { top: 85%; left: 80%; }
+
+
+
+
+    .meteors {
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E  %3ClinearGradient id='fire' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E    %3Cstop offset='0%25' stop-color='%23ff4500'/%3E    %3Cstop offset='50%25' stop-color='%23ffa500'/%3E    %3Cstop offset='100%25' stop-color='%23ffffff'/%3E  %3C/linearGradient%3E%3C/defs%3E%3Cline x1='0%25' y1='0%25' x2='100%25' y2='100%25' stroke='url(%23fire)' stroke-width='2'/%3E%3C/svg%3E");
+      animation: moveMeteor 5s linear infinite;
+    }
+
+    /* Header */
     header {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px;
       text-align: center;
-      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
 
     header h1 {
+      margin: 0;
       font-size: 2.5rem;
-      color: #2c3e50;
+      color: #00d1ff;
+      text-shadow: 0 0 10px #00d1ff, 0 0 20px #00d1ff;
     }
 
     header input {
       padding: 10px;
       width: 300px;
-      border: 1px solid #ccc;
+      border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 5px;
+      margin-top: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
     }
 
-    main {
+    header input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Navigation Menu */
+    nav {
+      display: flex;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    nav a {
+      color: white;
+      margin: 0 15px;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: #00d1ff;
+      text-shadow: 0 0 10px #00d1ff, 0 0 20px #00d1ff;
+    }
+
+    /* Main Content */
+    .dashboard {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 20px;
+      position: relative;
+      z-index: 1;
     }
 
     .widget {
-      background: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 15px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .widget:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
     }
 
     .widget h2 {
       font-size: 1.5rem;
       margin-bottom: 15px;
-      color: #34495e;
+      color: #00d1ff;
+      text-shadow: 0 0 10px #00d1ff, 0 0 20px #00d1ff;
     }
 
     .widget ul {
@@ -63,81 +174,158 @@
 
     .widget ul li {
       padding: 10px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .widget input {
       padding: 10px;
       width: calc(100% - 80px);
-      border: 1px solid #ccc;
+      border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    .widget input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
     }
 
     .widget button {
       padding: 10px 15px;
-      background: #3498db;
-      color: #fff;
+      background: #00d1ff;
+      color: #16213e;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
     }
 
     .widget button:hover {
-      background: #2980b9;
+      background: #00a8cc;
+      transform: scale(1.05);
     }
 
-    #time {
-      font-size: 2rem;
+    /* Footer */
+    footer {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      color: white;
       text-align: center;
-      margin: 20px 0;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    footer a {
+      color: #00d1ff;
+      font-weight: 500;
+      text-shadow: 0 0 10px #00d1ff, 0 0 20px #00d1ff;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- Animated Background -->
+  <div class="snowflakes snowflake1"></div>
+  <div class="snowflakes snowflake2"></div>
+  <div class="snowflakes snowflake3"></div>
+  <div class="snowflakes snowflake4"></div>
+  <div class="snowflakes snowflake5"></div>
+  <div class="snowflakes snowflake6"></div>
+  <div class="snowflakes snowflake7"></div>
+  <div class="snowflakes snowflake8"></div>
+  <div class="snowflakes snowflake9"></div>
+  <div class="meteors"></div>
+
+  <!-- Header -->
+  <header>
+    <h1>IITM Futuristic Dashboard</h1>
+    <input type="text" placeholder="Search...">
+  </header>
+
+  <!-- Navigation Menu -->
+  <nav>
+    <a href="#">Home</a>
+    <a href="#">Academics</a>
+    <a href="#">Courses</a>
+    <a href="#">Grades</a>
+    <a href="#">Food Court</a>
+    <a href="#">Announcements</a>
+    <a href="#">Events</a>
+    <a href="#">FAQ</a>
+    <a href="#">Contact</a>
+  </nav>
+
+  <!-- Main Content -->
   <div class="dashboard">
-    <!-- Header -->
-    <header>
-      <h1>Welcome, Student!</h1>
-      <input type="text" placeholder="Search...">
-    </header>
+    <!-- Curriculum -->
+    <section class="widget">
+      <h2>Curriculum</h2>
+      <p>View your degree curriculum, courses, and requisites.</p>
+      <button>View Curriculum</button>
+    </section>
 
-    <!-- Main Content -->
-    <main>
-      <!-- Class Schedule -->
-      <section class="widget schedule">
-        <h2>Class Schedule</h2>
-        <ul>
-          <li>Math - 9:00 AM</li>
-          <li>Science - 11:00 AM</li>
-          <li>History - 1:00 PM</li>
-          <li>English - 3:00 PM</li>
-        </ul>
-      </section>
+    <!-- Grades -->
+    <section class="widget">
+      <h2>Grades</h2>
+      <p>Check your graded assignments and exam results.</p>
+      <button>View Grades</button>
+    </section>
 
-      <!-- To-Do List -->
-      <section class="widget todo">
-        <h2>To-Do List</h2>
-        <input type="text" id="taskInput" placeholder="Add a task...">
-        <button onclick="addTask()">Add</button>
-        <ul id="taskList"></ul>
-      </section>
+    <!-- Food Court Balance -->
+    <section class="widget">
+      <h2>Food Court Balance</h2>
+      <p>Check your NFC Food Court balance and recharge.</p>
+      <button>View Balance</button>
+    </section>
 
-      <!-- Motivational Quote -->
-      <section class="widget quote">
-        <h2>Motivational Quote</h2>
-        <p id="quoteText">"The future belongs to those who believe in the beauty of their dreams."</p>
-        <button onclick="newQuote()">New Quote</button>
-      </section>
+    <!-- Announcements -->
+    <section class="widget">
+      <h2>Announcements</h2>
+      <p>Stay updated with the latest announcements.</p>
+      <button>View Announcements</button>
+    </section>
 
-      <!-- Study Timer -->
-      <section class="widget timer">
-        <h2>Study Timer</h2>
-        <p id="time">25:00</p>
-        <button onclick="startTimer()">Start</button>
-        <button onclick="resetTimer()">Reset</button>
-      </section>
-    </main>
+    <!-- Events -->
+    <section class="widget">
+      <h2>Upcoming Events</h2>
+      <p>Explore events happening on campus.</p>
+      <button>View Events</button>
+    </section>
+
+    <!-- To-Do List -->
+    <section class="widget">
+      <h2>To-Do List</h2>
+      <input type="text" id="taskInput" placeholder="Add a task...">
+      <button onclick="addTask()">Add</button>
+      <ul id="taskList"></ul>
+    </section>
+
+    <!-- Motivational Quote -->
+    <section class="widget">
+      <h2>Motivational Quote</h2>
+      <p id="quoteText">"The future belongs to those who believe in the beauty of their dreams."</p>
+      <button onclick="newQuote()">New Quote</button>
+    </section>
+
+    <!-- Study Timer -->
+    <section class="widget">
+      <h2>Study Timer</h2>
+      <p id="time">25:00</p>
+      <button onclick="startTimer()">Start</button>
+      <button onclick="resetTimer()">Reset</button>
+    </section>
   </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2023 IITM. All rights reserved. | <a href="#">Terms of Service</a> | <a href="#">Privacy Policy</a></p>
+  </footer>
 
   <script>
     // To-Do List Functionality
