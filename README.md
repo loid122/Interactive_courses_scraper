@@ -6,4 +6,3 @@ mess registration
 fees - receipts(circulars)
 keep main things like attendance , some events on dashboard
 
-/map/<dept> onclick not working , check prev code in github
