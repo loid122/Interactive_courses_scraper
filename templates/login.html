@@ -3,156 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Page</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
+    <title>Login</title>
     <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
             display: flex;
             justify-content: center;
             align-items: center;
-            color: white;
-            margin: 0;
+            height: 100vh;
+            color: #fff;
         }
-        .login-box {
+
+        .login-container {
             background: rgba(255, 255, 255, 0.1);
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            max-width: 400px;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             width: 100%;
+            max-width: 400px;
+            text-align: center;
         }
-        .login-box h2 {
+
+        h2 {
+            font-size: 2rem;
             margin-bottom: 1.5rem;
-            font-weight: bold;
+            color: #fff;
         }
-        .form-control {
-            background: rgba(255, 255, 255, 0.2);
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem;
             border: none;
-            color: white;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: background 0.3s ease;
         }
-        .form-control::placeholder {
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        input::placeholder {
             color: rgba(255, 255, 255, 0.7);
         }
-        .btn-primary {
-            background: #667eea;
-            border: none;
+
+        button {
             width: 100%;
-            padding: 0.5rem;
-            margin-top: 1rem;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            background: #fff;
+            color: #6a11cb;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
         }
-        .btn-primary:hover {
-            background: #764ba2;
+
+        button:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
         }
-        .flash-messages {
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Flash Message Container */
+        .flash-container {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 1000;
         }
-        .flash-messages .alert {
+
+        .flash-message {
+            padding: 1rem;
             margin-bottom: 0.5rem;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateX(100%);
+            animation: slideIn 0.5s forwards, fadeOut 5s forwards;
+        }
+
+        .flash-message.success {
+            background: #28a745;
+        }
+
+        .flash-message.error {
+            background: #dc3545;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            80% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.75rem;
+            }
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="login-box">
+    <div class="login-container">
         <h2>Login</h2>
-        <form id="loginForm">
-            <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" name="username" placeholder="Enter LDAP Username" required>
+        <form id="loginForm" method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
             </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" name="password" placeholder="Enter LDAP Password" required>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
             </div>
-            <button type="submit" class="btn btn-primary">Login</button>
+            <button type="submit">Login</button>
         </form>
     </div>
 
-    <!-- Flash messages -->
-    <div class="flash-messages">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
+    <!-- Flash Message Container -->
+    <div class="flash-container" id="flashContainer"></div>
 
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
-
-    <!-- Custom JavaScript for handling login -->
     <script>
-        
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+        const loginForm = document.getElementById('loginForm');
+        const flashContainer = document.getElementById('flashContainer');
 
-    const formData = new FormData(e.target);
-    try {
-        const response = await fetch('/login', {
-            method: 'POST',
-            body: new URLSearchParams(formData),
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+        // Function to display flash messages
+        function showFlashMessage(type, message) {
+            const flashMessage = document.createElement('div');
+            flashMessage.className = `flash-message ${type}`;
+            flashMessage.textContent = message;
+            flashContainer.appendChild(flashMessage);
+
+            // Remove the message after animation ends
+            setTimeout(() => {
+                flashMessage.remove();
+            }, 5000); // Matches the fadeOut animation duration
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(loginForm);
+            const data = new URLSearchParams(formData);
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    body: data
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showFlashMessage('success', 'Login successful!');
+                    setTimeout(() => {
+                        window.location.href = result.redirect_url; // Redirect after showing the message
+                    }, 1000); // Wait 1 second before redirecting
+                } else {
+                    showFlashMessage('error', result.error || 'Invalid username or password');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showFlashMessage('error', 'Login failed. Please try again.');
             }
         });
-
-        const data = await response.json();
-        const originalFetch = window.fetch;
-window.fetch = async (url, options = {}) => {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-        options.headers = options.headers || {};
-        options.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return originalFetch(url, options);
-};
-
-        if (data.token) {
-            // Store the token in localStorage
-            localStorage.setItem('jwt_token', data.token);
-
-            // Make a GET request to /dashboard with the token in the Authorization header
-            const dashboardResponse = await fetch(data.redirect_url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${data.token}`
-                }
-            });
-
-            if (dashboardResponse.ok) {
-                // Redirect to the dashboard if the request is successful
-                window.location.href = data.redirect_url;
-            } else {
-                // Handle errors (e.g., invalid token)
-                console.error('Failed to fetch dashboard:', dashboardResponse.statusText);
-                alert('Failed to authenticate. Redirecting to login...');
-                window.location.href = '/login';
-            }
-        } else if (data.error) {
-            // Show error message and redirect to login
-            alert(data.error);
-            window.location.href = data.redirect_url;
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-        window.location.href = '/login';
-    }
-});
     </script>
 </body>
 </html>

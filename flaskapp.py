@@ -1,4 +1,4 @@
-from flask import Flask, render_template,request,jsonify,redirect,render_template_string,abort,flash,url_for,session
+from flask import Flask, render_template,request,jsonify,redirect,render_template_string,abort,flash,url_for,session,make_response
 from bs4 import BeautifulSoup
 import html
 from flask_cors import CORS
@@ -29,8 +29,39 @@ CORS(app)
 def home():
     return(render_template('home.html'))
 
+@app.before_request
+def check_auth():
+    if request.endpoint == 'userdashboard':
+        token = request.cookies.get('jwt_token')  # Read token from cookie
 
+        if not token:
+            return redirect(url_for('login'))
 
+        try:
+            # Decode the JWT token
+            data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            user_id = data.get('user_id')
+
+            if not user_id:
+                abort(401)
+
+        except jwt.ExpiredSignatureError:
+            flash('Session expired. Please log in again.', 'error')
+            return redirect(url_for('login'))
+        except jwt.InvalidTokenError:
+            flash('Invalid session. Please log in again.', 'error')
+            return redirect(url_for('login'))
+        
+@app.route('/dashboard')
+def userdashboard():
+    return render_template('dashboard.html')
+
+@app.route('/logout')
+def logout():
+    resp = make_response(redirect(url_for('login')))
+    resp.delete_cookie('jwt_token')
+    flash('Logged out successfully!', 'success')
+    return resp
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -73,42 +104,28 @@ def login():
             token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
             flash('Login successful!', 'success')
-            return jsonify({'token': token, 'redirect_url': url_for('userdashboard')})
+
+            # Set JWT token as a cookie (HttpOnly prevents JS access)
+            resp = make_response(jsonify({
+                'redirect_url': url_for('userdashboard'),
+                'messages': [('success', 'Login successful!')]
+            }))
+            resp.set_cookie('jwt_token', token, httponly=True, samesite='Strict')
+            return resp
         else:
             flash('Invalid username or password', 'error')
-            return jsonify({'error': 'Invalid credentials', 'redirect_url': url_for('login')}), 401
+            return jsonify({
+                'error': 'Invalid credentials',
+                'redirect_url': url_for('login'),
+                'messages': [('error', 'Invalid username or password')]
+            }), 401
+
     elif request.method == 'GET':
         return render_template('login.html')
     else:
         abort(405)
 
 
-
-@app.route('/dashboard')
-def userdashboard():
-    token = request.headers.get('Authorization')
-    if not token:
-        flash('Authorization token is missing', 'error')
-        return redirect(url_for('login'))
-
-    try:
-        # Remove "Bearer " prefix if present
-        if token.startswith('Bearer '):
-            token = token.split(' ')[1]
-
-        # Decode and validate the token
-        data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        user_id = data['user_id']
-
-        # Successful authentication
-        return render_template('dashboard.html', user_id=user_id)
-
-    except jwt.ExpiredSignatureError:
-        flash('Token has expired', 'error')
-        return redirect(url_for('login'))
-    except jwt.InvalidTokenError:
-        flash('Invalid token', 'error')
-        return redirect(url_for('login'))
 
 
 
