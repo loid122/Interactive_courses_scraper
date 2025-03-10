@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance</title>
+    <style>
+        .loading-bar-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .loading-bar {
+            height: 20px;
+            border-radius: 5px;
+            background-color: #4caf50;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+            width: 0; /* Start with 0 width, will be updated by JS */
+            transition: width 0.5s ease-in-out; /* Smooth animation */
+        }
+        .heading {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="heading">Student Attendance</div>
+
+    <!-- Overall Attendance -->
+    <div class="loading-bar-container">
+        <div class="loading-bar" data-present="{{ data['Present'] }}" data-total="{{ data['Total Sessions'] }}">
+            Overall Attendance: {{ data['Present'] }}/{{ data['Total Sessions'] }}
+        </div>
+    </div>
+
+    <!-- Subject-wise Attendance -->
+    {% for subject, details in data['subjects'].items() %}
+        <div class="loading-bar-container">
+            <div class="loading-bar" data-present="{{ details[0] }}" data-total="{{ details[1] }}">
+                {{ subject }}: {{ details[0] }}/{{ details[1] }}
+            </div>
+        </div>
+    {% endfor %}
+
+    <script>
+        // Function to calculate and set the width of the loading bars
+        function setLoadingBarWidth() {
+            const loadingBars = document.querySelectorAll('.loading-bar');
+            loadingBars.forEach(bar => {
+                const present = parseFloat(bar.getAttribute('data-present'));
+                const total = parseFloat(bar.getAttribute('data-total'));
+                if (total > 0) {
+                    const width = (present / total) * 100;
+                    bar.style.width = `${width}%`;
+                } else {
+                    bar.style.width = '0%'; // Handle division by zero
+                    bar.textContent += ' (No data)'; // Add a message for zero total
+                }
+            });
+        }
+
+        // Call the function after the page loads
+        window.onload = setLoadingBarWidth;
+    </script>
+</body>
+</html>
