@@ -20,22 +20,13 @@ import jwt
 import datetime
 
 SECRET_KEY = 'your_secret_key'
-import base64
-import time 
-import json
-import jwt
-import datetime
-
-SECRET_KEY = 'your_secret_key'
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here" 
 app.secret_key = "your_secret_key_here" 
 
 CORS(app)
 @app.route('/')
 def home():
-    return(render_template('home.html'))
     return(render_template('home.html'))
 
 
@@ -82,7 +73,6 @@ def login():
             token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
             flash('Login successful!', 'success')
-            return jsonify({'token': token, 'redirect_url': url_for('userdashboard')})
             return jsonify({'token': token, 'redirect_url': url_for('userdashboard')})
         else:
             flash('Invalid username or password', 'error')
@@ -220,7 +210,48 @@ def get_all_courses_courseprereq_dict(dept,period='JAN-MAY 2025'):
             course_prereq[columns[3].text.strip()]=columns[9].text.strip()
     #print('get_all_courses_courseprereq_dict working')
     return(course_prereq)
+'''
+def get_all_courses_prereq(dept,period='JAN-MAY 2025'):
+    url = "https://academic.iitm.ac.in/load_record1.php"
+    headers = {
+        "Host": "academic.iitm.ac.in",  
+        "Sec-Ch-Ua-Platform": "\"Windows\"",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Ch-Ua": "\"Chromium\";v=\"133\", \"Not(A:Brand\";v=\"99\"",
+        "Sec-Ch-Ua-Mobile": "?0",
+        "X-Requested-With": "XMLHttpRequest",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Origin": "https://academic.iitm.ac.in",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Dest": "empty",
+        "Referer": "https://academic.iitm.ac.in/slotwise1.php",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Priority": "u=1, i",
+        "Connection": "keep-alive",
+    }
 
+    data = {
+        "pid": "Slot",
+        "peroid_wise": period,
+        "dept_code": dept
+    }
+
+    response = requests.post(url, headers=headers, data=data)
+
+    raw_html = (response.text)  # Print response content
+    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
+    soup = BeautifulSoup(html_data,'html.parser')
+    course_prereq=dict()
+    for row in soup.find_all("tr"):
+        columns = row.find_all("td")
+        if len(columns) > 9:  # Ensure enough columns exist
+            course_prereq[columns[3].text.strip()]=columns[9].text.strip()
+    return(course_prereq)
+
+'''
 def get_specific_course_details(courseid,dept,period='JAN-MAY 2025'):
     url = "https://academic.iitm.ac.in/load_record1.php"
     headers = {
@@ -850,60 +881,6 @@ def viewgrades(user_rollno,user_pw):
         return(redirect('/'))
 
 
-@app.route('/attendance')
-def attendance(user_rollno,user_digi_pw):
-    options = Options()
-   # options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
-    driver.get("https://iitm.digiicampus.com/home")
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[data-cy="loginform.email"]'))).send_keys(user_rollno)
-    driver.find_element(By.CSS_SELECTOR, 'input[data-cy="loginform.pwd"]').send_keys(user_digi_pw)
-    print('entered data')
-    sign_in_button = driver.find_element(By.CSS_SELECTOR, 'button[data-cy="loginform.signIn"]')
-    sign_in_button.click()
-    print('logged in!')
-    time.sleep(5)
-    # Get all cookies
-    cookies = driver.get_cookies()
-    #print("All Cookies (after delay):", cookies)
-    cookie = (cookies[-1])
-    val = (cookie['value'])
-    def decode_jwt(token):
-        header, payload, _ = token.split('.')
-        decoded_header = json.loads(base64.urlsafe_b64decode(header + '==').decode())
-        decoded_payload = json.loads(base64.urlsafe_b64decode(payload + '==').decode())
-        return(decoded_payload['ukid'])
-    uid = decode_jwt(val)
-    driver.get("https://iitm.digiicampus.com/userProfileCard/academics/"+str(uid))
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-    time.sleep(5)  # Allow JS to load (adjust as needed)
-    driver.execute_script("return document.readyState == 'complete'")
-    raw_html = driver.page_source
-    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
-    #pprint.pprint(html_data)
-    soup = BeautifulSoup(html_data, 'html.parser')
-    # Extract Total Sessions, Present, and Absent
-    attendance_data = {}
-    attendance_divs = soup.find_all('div', class_='att-total-count')
-    for div in attendance_divs:
-        label = div.find('div', class_='col-xs-4').text.strip()
-        value = div.find('div', class_='ng-binding').text.strip()
-        attendance_data[label] = value
-    #print(attendance_data)
-
-    # Extract course data
-    course_data = {}
-    course_rows = soup.find_all('div', class_='att-agg-course-header')
-    for row in course_rows:
-        course_name = row.find('div', class_='col-xs-4').text.strip()
-        attended = row.find_all('div', class_='col-xs-2 text-center ng-binding')[0].text.strip()
-        scheduled = row.find_all('div', class_='col-xs-2 text-center ng-binding')[1].text.strip()
-        percentage = row.find_all('div', class_='col-xs-2 text-center ng-binding')[2].text.strip()
-        course_data[course_name] = [attended, scheduled, percentage]
-    #print(course_data)
-
-    result = {attendance_data,course_data}
-    return render_template('attendance.html', data=result)
 @app.route('/attendance')
 def attendance(user_rollno,user_digi_pw):
     options = Options()
