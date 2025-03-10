@@ -266,36 +266,36 @@
     <!-- Curriculum -->
     <section class="widget">
       <h2>Curriculum</h2>
-      <p>View your degree curriculum, courses, and requisites.</p>
-      <button>View Curriculum</button>
+      <p>View your degree curriculum.</p>
+      <button onclick="location.href='/findcurriculum'">View Curriculum</button>
     </section>
 
     <!-- Grades -->
     <section class="widget">
       <h2>Grades</h2>
       <p>Check your graded assignments and exam results.</p>
-      <button>View Grades</button>
+      <button onclick="location.href='/viewgrades'">View Grades</button>
     </section>
 
     <!-- Food Court Balance -->
     <section class="widget">
       <h2>Food Court Balance</h2>
       <p>Check your NFC Food Court balance and recharge.</p>
-      <button>View Balance</button>
+      <button onclick="location.href='/ikollege/NFC_expenditure'">View Balance</button>
     </section>
 
     <!-- Announcements -->
     <section class="widget">
-      <h2>Announcements</h2>
-      <p>Stay updated with the latest announcements.</p>
-      <button>View Announcements</button>
+      <h2>View Department courses </h2>
+      <p>View and analyze your Department's courses and prerequisites</p>
+      <button onclick="location.href='/map/<dept>'"> Here </button>
     </section>
 
     <!-- Events -->
     <section class="widget">
-      <h2>Upcoming Events</h2>
-      <p>Explore events happening on campus.</p>
-      <button>View Events</button>
+      <h2>Check Attendance</h2>
+      <p>Check your Attendance</p>
+      <button onclick="location.href='/attendance'">Check Attendance</button>
     </section>
 
     <!-- To-Do List -->
@@ -329,6 +329,8 @@
 
   <script>
     // To-Do List Functionality
+
+
     function addTask() {
       const taskInput = document.getElementById("taskInput");
       const taskList = document.getElementById("taskList");
