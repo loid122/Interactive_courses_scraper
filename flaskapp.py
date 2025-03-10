@@ -206,48 +206,7 @@ def get_all_courses_courseprereq_dict(dept,period='JAN-MAY 2025'):
             course_prereq[columns[3].text.strip()]=columns[9].text.strip()
     #print('get_all_courses_courseprereq_dict working')
     return(course_prereq)
-'''
-def get_all_courses_prereq(dept,period='JAN-MAY 2025'):
-    url = "https://academic.iitm.ac.in/load_record1.php"
-    headers = {
-        "Host": "academic.iitm.ac.in",  
-        "Sec-Ch-Ua-Platform": "\"Windows\"",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Sec-Ch-Ua": "\"Chromium\";v=\"133\", \"Not(A:Brand\";v=\"99\"",
-        "Sec-Ch-Ua-Mobile": "?0",
-        "X-Requested-With": "XMLHttpRequest",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/javascript, */*; q=0.01",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "Origin": "https://academic.iitm.ac.in",
-        "Sec-Fetch-Site": "same-origin",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Dest": "empty",
-        "Referer": "https://academic.iitm.ac.in/slotwise1.php",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Priority": "u=1, i",
-        "Connection": "keep-alive",
-    }
 
-    data = {
-        "pid": "Slot",
-        "peroid_wise": period,
-        "dept_code": dept
-    }
-
-    response = requests.post(url, headers=headers, data=data)
-
-    raw_html = (response.text)  # Print response content
-    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
-    soup = BeautifulSoup(html_data,'html.parser')
-    course_prereq=dict()
-    for row in soup.find_all("tr"):
-        columns = row.find_all("td")
-        if len(columns) > 9:  # Ensure enough columns exist
-            course_prereq[columns[3].text.strip()]=columns[9].text.strip()
-    return(course_prereq)
-
-'''
 def get_specific_course_details(courseid,dept,period='JAN-MAY 2025'):
     url = "https://academic.iitm.ac.in/load_record1.php"
     headers = {
