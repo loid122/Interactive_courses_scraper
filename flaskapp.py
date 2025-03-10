@@ -2,7 +2,7 @@ from flask import Flask, render_template,request,jsonify,redirect,render_templat
 from bs4 import BeautifulSoup
 import html
 from flask_cors import CORS
-
+from cryptography.fernet import Fernet
  
 import requests
 import re
@@ -20,6 +20,8 @@ import jwt
 import datetime
 
 SECRET_KEY = 'your_secret_key'
+key = Fernet.generate_key()
+cipher = Fernet(key)
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here" 
@@ -28,6 +30,23 @@ CORS(app)
 @app.route('/')
 def home():
     return(render_template('home.html'))
+
+
+def decode_jwt(token):
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return {"error": "Token expired"}
+    except jwt.InvalidTokenError:
+        return {"error": "Invalid token"}
+
+def encrypt_jwt(pt):
+    encrypted = cipher.encrypt(pt)
+    return encrypted
+
+def decrypt_jwt(ct):
+    decrypted = cipher.decrypt(ct)
+    return decrypted
 
 @app.before_request
 def check_auth():
@@ -40,9 +59,9 @@ def check_auth():
         try:
             # Decode the JWT token
             data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-            user_id = data.get('user_id')
+            user_rollno = data.get('user_rollno')
 
-            if not user_id:
+            if not user_rollno:
                 abort(401)
 
         except jwt.ExpiredSignatureError:
@@ -51,6 +70,18 @@ def check_auth():
         except jwt.InvalidTokenError:
             flash('Invalid session. Please log in again.', 'error')
             return redirect(url_for('login'))
+        
+    elif request.endpoint in ['attendance','viewgrades','expenditure']:
+        jwt_token = request.cookies.get('jwt_token')
+        if not jwt_token:
+            return jsonify({"error": "Missing token"}), 401
+        
+        decoded = decode_jwt(jwt_token)
+        if 'error' in decoded:
+            return jsonify(decoded), 401
+        
+        # Attach decoded payload to request context
+        request.decoded_jwt = decoded
         
 @app.route('/dashboard')
 def userdashboard():
@@ -68,7 +99,7 @@ def login():
     if request.method == 'POST':
         user_rollno = request.form['username']
         user_pw = request.form['password']
-
+        user_digi_pw = request.form['digicampus_password']
         url = "https://ssp.iitm.ac.in/api/login"
 
         headers = {
@@ -98,7 +129,9 @@ def login():
         response = requests.post(url, headers=headers, json=payload1)
         if 'login successful' in response.text:
             payload = {
-                'user_id': user_rollno,  # Unique ID for the account
+                'user_rollno': user_rollno,  # Unique ID for the account
+                'user_pw': encrypt_jwt(user_pw),
+                'user_digi_pw': encrypt_jwt(user_digi_pw),
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)  # Token expiration
             }
             token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
@@ -227,48 +260,7 @@ def get_all_courses_courseprereq_dict(dept,period='JAN-MAY 2025'):
             course_prereq[columns[3].text.strip()]=columns[9].text.strip()
     #print('get_all_courses_courseprereq_dict working')
     return(course_prereq)
-'''
-def get_all_courses_prereq(dept,period='JAN-MAY 2025'):
-    url = "https://academic.iitm.ac.in/load_record1.php"
-    headers = {
-        "Host": "academic.iitm.ac.in",  
-        "Sec-Ch-Ua-Platform": "\"Windows\"",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Sec-Ch-Ua": "\"Chromium\";v=\"133\", \"Not(A:Brand\";v=\"99\"",
-        "Sec-Ch-Ua-Mobile": "?0",
-        "X-Requested-With": "XMLHttpRequest",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/javascript, */*; q=0.01",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "Origin": "https://academic.iitm.ac.in",
-        "Sec-Fetch-Site": "same-origin",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Dest": "empty",
-        "Referer": "https://academic.iitm.ac.in/slotwise1.php",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Priority": "u=1, i",
-        "Connection": "keep-alive",
-    }
 
-    data = {
-        "pid": "Slot",
-        "peroid_wise": period,
-        "dept_code": dept
-    }
-
-    response = requests.post(url, headers=headers, data=data)
-
-    raw_html = (response.text)  # Print response content
-    html_data = raw_html.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("\/", "/")
-    soup = BeautifulSoup(html_data,'html.parser')
-    course_prereq=dict()
-    for row in soup.find_all("tr"):
-        columns = row.find_all("td")
-        if len(columns) > 9:  # Ensure enough columns exist
-            course_prereq[columns[3].text.strip()]=columns[9].text.strip()
-    return(course_prereq)
-
-'''
 def get_specific_course_details(courseid,dept,period='JAN-MAY 2025'):
     url = "https://academic.iitm.ac.in/load_record1.php"
     headers = {
@@ -797,9 +789,11 @@ def get_curriculum_ed_iddd_ev_new():
 
 
 @app.route('/ikollege/NFC_expenditure')
-def expenditure(user_rollno,user_pw):
+def expenditure():
+    user_rollno = request.decoded_jwt['user_rollno']
+    user_pw = decrypt_jwt(request.decoded_jwt['user_pw'])
     if 'username' in session:
-        # Firefox options (Optional: Run headless in background)
+
         options = Options()
         options.add_argument("--headless")  # Uncomment for headless mode
 
@@ -837,12 +831,14 @@ def expenditure(user_rollno,user_pw):
             "rows": rows
         }
         driver.quit()
-        return(data)
+        return(render_template('nfc_expenditure.html',data = data))
     else:
         return(redirect('/'))
 
 @app.route('/viewgrades')
-def viewgrades(user_rollno,user_pw):
+def viewgrades():
+    user_rollno = request.decoded_jwt['user_rollno']
+    user_pw = decrypt_jwt(request.decoded_jwt['user_pw'])
     if 'username' in session:
 
         options = Options()
@@ -893,13 +889,16 @@ def viewgrades(user_rollno,user_pw):
                     course_no = cols[1]
                     output[current_semester][course_no] = cols[2:]
         driver.quit()        
-        return(output)
+        return render_template('viewgrades.html', output=output)
     else:
         return(redirect('/'))
 
 
+
 @app.route('/attendance')
-def attendance(user_rollno,user_digi_pw):
+def attendance():
+    user_rollno = request.decoded_jwt['user_rollno']
+    user_digi_pw = decrypt_jwt(request.decoded_jwt['user_digi_pw'])
     options = Options()
    # options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
@@ -952,5 +951,7 @@ def attendance(user_rollno,user_digi_pw):
 
     result = {attendance_data,course_data}
     return render_template('attendance.html', data=result)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
