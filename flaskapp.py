@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 import html
 from flask_cors import CORS
 from cryptography.fernet import Fernet
- 
 import requests
 import re
 from collections import defaultdict
@@ -34,19 +33,21 @@ def home():
 
 def decode_jwt(token):
     try:
+        print(token.count('.'))
         return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
         return {"error": "Token expired"}
     except jwt.InvalidTokenError:
         return {"error": "Invalid token"}
 
+
 def encrypt_jwt(pt):
-    encrypted = cipher.encrypt(pt)
-    return encrypted
+    encrypted = cipher.encrypt(pt.encode())
+    return encrypted.decode()
 
 def decrypt_jwt(ct):
-    decrypted = cipher.decrypt(ct)
-    return decrypted
+    decrypted = cipher.decrypt(ct.encode())
+    return decrypted.decode()
 
 @app.before_request
 def check_auth():
@@ -99,7 +100,7 @@ def login():
     if request.method == 'POST':
         user_rollno = request.form['username']
         user_pw = request.form['password']
-        user_digi_pw = request.form['digicampus_password']
+        user_digi_pw = request.form['digipassword']
         url = "https://ssp.iitm.ac.in/api/login"
 
         headers = {
@@ -900,7 +901,7 @@ def attendance():
     user_rollno = request.decoded_jwt['user_rollno']
     user_digi_pw = decrypt_jwt(request.decoded_jwt['user_digi_pw'])
     options = Options()
-   # options.add_argument("--headless")
+    options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
     driver.get("https://iitm.digiicampus.com/home")
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[data-cy="loginform.email"]'))).send_keys(user_rollno)
@@ -947,9 +948,11 @@ def attendance():
         scheduled = row.find_all('div', class_='col-xs-2 text-center ng-binding')[1].text.strip()
         percentage = row.find_all('div', class_='col-xs-2 text-center ng-binding')[2].text.strip()
         course_data[course_name] = [attended, scheduled, percentage]
-    #print(course_data)
+    print(type(course_data))
+    print(type(attendance_data))
+    result = attendance_data | {"subjects":course_data}
 
-    result = {attendance_data,course_data}
+    print(result)
     return render_template('attendance.html', data=result)
 
 
