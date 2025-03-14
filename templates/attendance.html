@@ -5,26 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Attendance</title>
     <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 10%, transparent 10.01%);
+            background-size: 20px 20px;
+            animation: moveBackground 10s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-100%);
+            }
+        }
+
+        /* Heading */
+        .heading {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            0% {
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5);
+            }
+            100% {
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 255, 255, 0.7);
+            }
+        }
+
+        /* Loading Bar Container */
         .loading-bar-container {
             width: 100%;
-            background-color: #f3f3f3;
-            border-radius: 5px;
-            margin-bottom: 10px;
+            max-width: 600px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
+        /* Loading Bar */
         .loading-bar {
-            height: 20px;
-            border-radius: 5px;
-            background-color: #4caf50;
+            height: 30px;
+            border-radius: 25px;
+            background: linear-gradient(90deg, #00b4db, #0083b0);
             text-align: center;
             color: white;
-            line-height: 20px;
-            width: 0; /* Start with 0 width, will be updated by JS */
-            transition: width 0.5s ease-in-out; /* Smooth animation */
-        }
-        .heading {
-            font-size: 24px;
+            line-height: 30px;
+            width: 0;
+            transition: width 1s ease-in-out, opacity 0.5s ease-in-out;
+            opacity: 0;
             font-weight: bold;
-            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading-bar.show {
+            opacity: 1;
+        }
+
+        /* Hover Effects */
+        .loading-bar-container:hover .loading-bar {
+            transform: scale(1.02);
+            transition: transform 0.3s ease;
+        }
+
+        .loading-bar-container:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .heading {
+                font-size: 32px;
+            }
+            .loading-bar-container {
+                max-width: 90%;
+            }
         }
     </style>
 </head>
@@ -61,6 +149,7 @@
                     bar.style.width = '0%'; // Handle division by zero
                     bar.textContent += ' (No data)'; // Add a message for zero total
                 }
+                bar.classList.add('show'); // Show the bar with opacity transition
             });
         }
 
