@@ -1,10 +1,24 @@
 # Interactive_courses_scraper
 
-mess registration
-- ikollege
-- 
-fees - receipts(circulars)
-keep main things like attendance , some events on dashboard
+An interactive web application that fetches and processes data from multiple websites using structured queries and request modes. Built with Flask for the backend and Cytoscape.js for interactive front-end visualizations.
+Access to multiple from one.
 
-the jwt_token's payload to be changed , it should store  user_rollno, user_pw, user_digi_pw  with some encryption , eg:XOR 
-secret-keys to be made random and long
+# Features
+
+Web Scraping: Extracts structured data from websites using Python requests and BeautifulSoup.
+
+Secure Data Handling: Utilizes cryptography.fernet for encrypting session data.
+
+Interactive Visualizations: Displays extracted data using Cytoscape.js.
+
+Session Management: Manages user sessions without storing any data on the server.
+
+# Technologies Used
+
+Backend: Flask
+
+Frontend: Cytoscape.js
+
+Scraping Tools: Requests, BeautifulSoup, re (regex)
+
+Security: Fernet Cryptography
