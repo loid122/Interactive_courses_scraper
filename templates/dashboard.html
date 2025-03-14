@@ -266,36 +266,68 @@
     <!-- Curriculum -->
     <section class="widget">
       <h2>Curriculum</h2>
-      <p>View your degree curriculum, courses, and requisites.</p>
-      <button>View Curriculum</button>
+      <p>View your degree curriculum.</p>
+      <button onclick="location.href='/findcurriculum'">View Curriculum</button>
     </section>
 
     <!-- Grades -->
     <section class="widget">
       <h2>Grades</h2>
       <p>Check your graded assignments and exam results.</p>
-      <button>View Grades</button>
+      <button onclick="location.href='/viewgrades'">View Grades</button>
     </section>
 
     <!-- Food Court Balance -->
     <section class="widget">
       <h2>Food Court Balance</h2>
       <p>Check your NFC Food Court balance and recharge.</p>
-      <button>View Balance</button>
+      <button onclick="location.href='/ikollege/NFC_expenditure'">View Balance</button>
     </section>
 
     <!-- Announcements -->
     <section class="widget">
-      <h2>Announcements</h2>
-      <p>Stay updated with the latest announcements.</p>
-      <button>View Announcements</button>
-    </section>
+  <h2>View Department Courses</h2>
+  <p>View and analyze your Department's courses and prerequisites</p>
+  <select id="deptDropdown" onchange="redirectToDept()">
+    <option value="">Select Department</option>
+    <option value="cs">Computer Science (CS)</option>
+    <option value="ee">Electrical Engineering (EE)</option>
+    <option value="me">Mechanical Engineering (ME)</option>
+    <option value="ed">Engineering Design (ED)</option>
+    <option value="mm">Metallurgical Engineering (MM)</option>
+    <option value="oe">Ocean Engineering (OE)</option>
+    <option value="ch">Chemical Engineering (CH)</option>
+    <option value="cy">Chemistry (CY)</option>
+    <option value="ma">Mathematics (MA)</option>
+    <option value="ce">Civil Engineering (CE)</option>
+    <option value="ae">Aerospace Engineering (AE)</option>
+    <option value="bt">Biotechnology (BT)</option>
+    <option value="ph">Physics (PH)</option>
+    <option value="ep">Engineering Physics (EP)</option>
+  </select>
+
+  <script>
+    function redirectToDept() {
+      const dept = document.getElementById("deptDropdown").value;
+      if (dept) {
+        window.location.href = `/dept/${dept}`;
+      }
+    }
+  </script>
+</section>
+
 
     <!-- Events -->
     <section class="widget">
-      <h2>Upcoming Events</h2>
-      <p>Explore events happening on campus.</p>
-      <button>View Events</button>
+      <h2>Check Attendance</h2>
+      <p>Check your Attendance</p>
+      <button onclick="location.href='/attendance'">Check Attendance</button>
+    </section>
+
+    <section class="widget">
+      <h2>Open moodle</h2>
+      <p>Check your Attendance</p>
+      <button onclick="location.href='/moodle'">Go to moodle</button>
     </section>
 
     <!-- To-Do List -->
@@ -329,6 +361,8 @@
 
   <script>
     // To-Do List Functionality
+
+
     function addTask() {
       const taskInput = document.getElementById("taskInput");
       const taskList = document.getElementById("taskList");
