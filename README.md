@@ -6,7 +6,7 @@ Access to data from multiple websites.
 
 # Features
 
-Web Scraping: Extracts structured data from websites using Python requests and BeautifulSoup.
+Web Scraping: Extracts structured data from websites using Python requests, Selenium and BeautifulSoup.
 
 Secure Data Handling: Utilizes cryptography.fernet for encrypting session data.
 
