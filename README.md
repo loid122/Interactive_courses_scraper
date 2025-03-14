@@ -1,7 +1,8 @@
 # Interactive_courses_scraper
 
 An interactive web application that fetches and processes data from multiple websites using structured queries and request modes. Built with Flask for the backend and Cytoscape.js for interactive front-end visualizations.
-Access to multiple from one.
+
+Access to data from multiple websites.
 
 # Features
 
