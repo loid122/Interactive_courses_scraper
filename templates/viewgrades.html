@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semester Course Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .semester-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        @media (max-width: 600px) {
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Semester Course Data</h1>
+
+    {% for semester, courses in output.items() %}
+    <div class="semester-container">
+        <h2>{{ semester }}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Course No</th>
+                    <th>Course Name</th>
+                    <th>Credits</th>
+                    <th>Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course_no, details in courses.items() %}
+                    {% if course_no != 'sem_gpa' %}
+                        <tr>
+                            <td>{{ course_no }}</td>
+                            <td>{{ details[0] }}</td>
+                            <td>{{ details[2] }}</td>
+                            <td>{{ details[3] }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Display sem_gpa row -->
+                {% if 'sem_gpa' in courses %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; font-weight: bold;">
+                            {{ courses.sem_gpa }}
+                        </td>
+                    </tr>
+                {% endif %}
+
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+</body>
+
+</html>
