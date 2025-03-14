@@ -101,34 +101,37 @@ def login():
         user_rollno = request.form['username']
         user_pw = request.form['password']
         user_digi_pw = request.form['digipassword']
-        url = "https://ssp.iitm.ac.in/api/login"
+        url = "https://discourse.iitm.ac.in/auth/ldap/callback"
 
         headers = {
-            "Host": "ssp.iitm.ac.in",
-            "Sec-Ch-Ua-Platform": "\"Windows\"",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Accept": "application/json, text/plain, */*",
-            "Sec-Ch-Ua": "\"Chromium\";v=\"133\", \"Not(A:Brand\";v=\"99\"",
-            "Content-Type": "application/json",
+            "Host": "discourse.iitm.ac.in",
+            "Cache-Control": "max-age=0",
+            "Sec-Ch-Ua": '"Chromium";v="133", "Not(A:Brand";v="99"',
             "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": "Windows",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://discourse.iitm.ac.in",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Upgrade-Insecure-Requests": "1",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
-            "Origin": "https://ssp.iitm.ac.in",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "Sec-Fetch-Site": "same-origin",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-            "Referer": "https://ssp.iitm.ac.in/",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-User": "?1",
+            "Sec-Fetch-Dest": "document",
+            "Referer": "https://discourse.iitm.ac.in/auth/ldap",
             "Accept-Encoding": "gzip, deflate, br",
-            "Priority": "u=1, i",
+            "Priority": "u=0, i",
             "Connection": "keep-alive"
         }
 
-        val = '{"user_id":"'+ user_rollno +'","password":"' + user_pw + '","student":true,"professor":false,"non_iitm":false,"new_admission":false,"summer_fellowship":false}'
-        val_2 = base64.b64encode(val.encode()).decode()
+        payload = {
+                    "username": user_rollno,
+                    "password": user_pw
+                }
 
-        payload1 = {"data": val_2}
-
-        response = requests.post(url, headers=headers, json=payload1)
-        if 'login successful' in response.text:
+        response = requests.post(url, headers=headers, data=payload)
+        if 'error authorizing your account' not in response.text:
             payload = {
                 'user_rollno': user_rollno,  # Unique ID for the account
                 'user_pw': encrypt_jwt(user_pw),
@@ -158,7 +161,6 @@ def login():
         return render_template('login.html')
     else:
         abort(405)
-
 
 
 
