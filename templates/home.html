@@ -33,7 +33,7 @@
 <body>
     <div class="home-box">
         <h1>Welcome to the Home Page</h1>
-        <p>User ID: <span id="user_id"></span></p>
+
         <button id="dashboardButton" class="btn btn-primary">Go to Dashboard</button>
     </div>
 
@@ -43,43 +43,11 @@
 
     <!-- Custom JavaScript for token validation -->
     <script>
-        // Function to handle the "Go to Dashboard" button click
-        document.getElementById('dashboardButton').addEventListener('click', async () => {
-            // Fetch the token from localStorage
-            const token = localStorage.getItem('jwt_token');
-    
-            if (!token) {
-                console.log('from home : token not found sending to login')
-                // Redirect to login if no token is found
-                window.location.href = '/login';
-                return;
-            }
-    
-            try {
-                // Redirect to dashboard if token is present
-                const response = await fetch('/dashboard', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-    
-                if (response.redirected) {
-                    console.log('page redirected so changing to')
-                    window.location.href = response.url; // Handle redirects
-                } else if (response.ok) {
-                    console.log('response is ok')
-                    window.location.href = '/dashboard';
-                } else {
-                    alert('Error accessing dashboard');
-                    window.location.href = '/login';
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-                window.location.href = '/login';
-            }
-        });
+        document.getElementById('dashboardButton').addEventListener('click', () => {
+    window.location.href = '/dashboard';
+});
+
+
     </script>
     
 </body>
