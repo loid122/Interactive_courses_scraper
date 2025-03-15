@@ -2,7 +2,6 @@ from flask import Flask, render_template,request,jsonify,redirect,render_templat
 from bs4 import BeautifulSoup
 import html
 from flask_cors import CORS
-from cryptography.fernet import Fernet
 import requests
 import re
 from collections import defaultdict
@@ -17,13 +16,16 @@ import time
 import json
 import jwt
 import datetime
+import pprint
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 
-SECRET_KEY = 'your_secret_key'
-key = Fernet.generate_key()
-cipher = Fernet(key)
+
+KEY = get_random_bytes(32)     #SAVE ONCE AND KEEP IT CONSTANT
+SECRET_KEY = 'my_jwt_secret_key'   #JWT SIGNING KEY
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here" 
+app.secret_key = "your_secret_key_here"  #key for flashes
 
 CORS(app)
 @app.route('/')
@@ -41,13 +43,16 @@ def decode_jwt(token):
         return {"error": "Invalid token"}
 
 
-def encrypt_jwt(pt):
-    encrypted = cipher.encrypt(pt.encode())
-    return encrypted.decode()
+def encrypt_jwt(pt,KEY):
+    cipher = AES.new(KEY, AES.MODE_GCM)
+    ciphertext, tag = cipher.encrypt_and_digest(pt.encode())
+    return base64.b64encode(cipher.nonce + tag + ciphertext).decode()
 
-def decrypt_jwt(ct):
-    decrypted = cipher.decrypt(ct.encode())
-    return decrypted.decode()
+def decrypt_jwt(ct,KEY):
+    decoded = base64.b64decode(ct)
+    nonce, tag, ciphertext = decoded[:16], decoded[16:32], decoded[32:]
+    cipher = AES.new(KEY, AES.MODE_GCM, nonce=nonce)
+    return cipher.decrypt_and_verify(ciphertext, tag).decode()
 
 @app.before_request
 def check_auth():
@@ -182,7 +187,7 @@ def map(dept):
         pp_data = get_all_courses_courseprereq_dict(dept)
     elif dept in ['ph','ep']:
         pp=process_prerequisites(get_all_courses_courseprereq_dict('ph'),get_all_courses_with_names_for_ep('ph'))
-        pp_data = get_all_courses_courseprereq_dict('dept')
+        pp_data = get_all_courses_courseprereq_dict('ph')
     else:
         abort(404)
     return render_template('index.html',courseprereq=pp,coursedata=pp_data)
@@ -838,6 +843,7 @@ def expenditure():
         "rows": rows
     }
     driver.quit()
+    pprint.pprint(data)
     return(render_template('nfc_expenditure.html',data = data))
 
 
