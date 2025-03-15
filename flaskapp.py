@@ -181,13 +181,13 @@ def findcurriculum():
     return(render_template('indo.html'))
 
 @app.route('/map/<dept>')
-def map(dept):
+def map(dept,period = 'JAN-MAY 2025'):
     if dept.lower() in ['cs','ee','me','ed','mm','oe','ch','cy','ma','ce','ae','bt']:
-        pp=process_prerequisites(get_all_courses_courseprereq_dict(dept),get_all_courses_with_names(dept))
-        pp_data = get_all_courses_courseprereq_dict(dept)
+        pp=process_prerequisites(get_all_courses_courseprereq_dict(dept,period),get_all_courses_with_names(dept,period))
+        pp_data = get_all_courses_courseprereq_dict(dept,period)
     elif dept in ['ph','ep']:
-        pp=process_prerequisites(get_all_courses_courseprereq_dict('ph'),get_all_courses_with_names_for_ep('ph'))
-        pp_data = get_all_courses_courseprereq_dict('ph')
+        pp=process_prerequisites(get_all_courses_courseprereq_dict('ph',period),get_all_courses_with_names_for_ep('ph',period))
+        pp_data = get_all_courses_courseprereq_dict('ph',period)
     else:
         abort(404)
     return render_template('index.html',courseprereq=pp,coursedata=pp_data)
