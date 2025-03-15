@@ -1,14 +1,14 @@
 # Interactive_courses_scraper
 
-An interactive web application that fetches and processes data from multiple websites using structured queries and request modes. Built with Flask for the backend and Cytoscape.js for interactive front-end visualizations.
+An interactive web application that fetches and processes data from multiple IITM websites using structured queries and request modes. Built with Flask for the backend and Cytoscape.js for interactive front-end visualizations.
 
-Access to data from multiple websites.
+Access to data from multiple IITM websites.
 
 # Features
 
 Web Scraping: Extracts structured data from websites using Python requests, Selenium and BeautifulSoup.
 
-Secure Data Handling: Utilizes cryptography.fernet for encrypting session data.
+Secure Data Handling: Utilizes fernet cryptography for encrypting session data.
 
 Interactive Visualizations: Displays extracted data using Cytoscape.js.
 
