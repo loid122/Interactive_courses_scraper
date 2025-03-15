@@ -891,6 +891,9 @@ def viewgrades():
             if len(cols) == 1 and 'Semester' in cols[0]:
                 current_semester = cols[0]
                 output[current_semester] = {}
+            elif len(cols) == 1 and ' (' in cols[0]:
+                current_semester = cols[0]
+                output[current_semester] = {}
             elif len(cols) == 1 and 'Earned Credit:' in cols[0]:
                 output[current_semester]['sem_gpa'] = cols[0]
             # Regular course rows
