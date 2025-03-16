@@ -145,8 +145,8 @@ def login():
         if 'error authorizing your account' not in response.text:
             payload = {
                 'user_rollno': user_rollno,  # Unique ID for the account
-                'user_pw': encrypt_jwt(user_pw),
-                'user_digi_pw': encrypt_jwt(user_digi_pw),
+                'user_pw': encrypt_jwt(user_pw,KEY),
+                'user_digi_pw': encrypt_jwt(user_digi_pw,KEY),
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)  # Token expiration
             }
             token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
