@@ -805,7 +805,7 @@ def get_curriculum_ed_iddd_ev_new():
 @app.route('/ikollege/NFC_expenditure')
 def expenditure():
     user_rollno = request.decoded_jwt['user_rollno']
-    user_pw = decrypt_jwt(request.decoded_jwt['user_pw'])
+    user_pw = decrypt_jwt(request.decoded_jwt['user_pw'],KEY)
     options = Options()
     options.add_argument("--headless")  # Uncomment for headless mode
 
@@ -850,7 +850,7 @@ def expenditure():
 @app.route('/viewgrades')
 def viewgrades():
     user_rollno = request.decoded_jwt['user_rollno']
-    user_pw = decrypt_jwt(request.decoded_jwt['user_pw'])
+    user_pw = decrypt_jwt(request.decoded_jwt['user_pw'],KEY)
     options = Options()
     options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
@@ -909,7 +909,7 @@ def viewgrades():
 @app.route('/attendance')
 def attendance():
     user_rollno = request.decoded_jwt['user_rollno']
-    user_digi_pw = decrypt_jwt(request.decoded_jwt['user_digi_pw'])
+    user_digi_pw = decrypt_jwt(request.decoded_jwt['user_digi_pw'],KEY)
     options = Options()
     options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
@@ -970,7 +970,7 @@ def attendance():
 @app.route('/moodle')
 def inmoodle():
     user_rollno = request.decoded_jwt['user_rollno']
-    user_pw = decrypt_jwt(request.decoded_jwt['user_pw'])
+    user_pw = decrypt_jwt(request.decoded_jwt['user_pw'],KEY)
     session = requests.Session()
     login_url = "https://courses.iitm.ac.in/login/index.php"
     response = session.get(login_url)
