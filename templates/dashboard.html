@@ -288,7 +288,8 @@
     <section class="widget">
   <h2>View Department Courses</h2>
   <p>View and analyze your Department's courses and prerequisites</p>
-  <select id="deptDropdown" onchange="redirectToDept()">
+
+  <select id="deptDropdown">
     <option value="">Select Department</option>
     <option value="cs">Computer Science (CS)</option>
     <option value="ee">Electrical Engineering (EE)</option>
@@ -306,11 +307,33 @@
     <option value="ep">Engineering Physics (EP)</option>
   </select>
 
+  <select id="periodDropdown">
+    <option value="">Select Period</option>
+    <option value="JAN-MAY 2025">JAN-MAY 2025</option>
+    <option value="JAN-MAR 2025">JAN-MAR 2025</option>
+    <option value="JUL-NOV 2024">JUL-NOV 2024</option>
+    <option value="OCT-DEC 2024">OCT-DEC 2024</option>
+    <option value="JUL-SEP 2024">JUL-SEP 2024</option>
+    <option value="SUMMER 2024">SUMMER 2024</option>
+    <option value="APR-JUN 2024">APR-JUN 2024</option>
+    <option value="JAN-MAY 2024">JAN-MAY 2024</option>
+    <option value="JAN-MAR 2024">JAN-MAR 2024</option>
+    <option value="JUL-NOV 2023">JUL-NOV 2023</option>
+    <option value="OCT-DEC 2023">OCT-DEC 2023</option>
+    <option value="JUL-SEP 2023">JUL-SEP 2023</option>
+    <option value="SUMMER 2023">SUMMER 2023</option>
+  </select>
+
+  <button onclick="redirectToMap()">Go</button>
+
   <script>
-    function redirectToDept() {
+    function redirectToMap() {
       const dept = document.getElementById("deptDropdown").value;
-      if (dept) {
-        window.location.href = `/dept/${dept}`;
+      const period = document.getElementById("periodDropdown").value;
+      if (dept && period) {
+        window.location.href = `/map/${dept}?period=${encodeURIComponent(period)}`;
+      } else {
+        alert("Please select both department and period.");
       }
     }
   </script>
