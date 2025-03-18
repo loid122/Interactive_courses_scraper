@@ -8,7 +8,7 @@ Access to data from multiple IITM websites.
 
 Web Scraping: Extracts structured data from websites using Python requests, Selenium and BeautifulSoup.
 
-Secure Data Handling: Utilizes fernet cryptography for encrypting session data.
+Secure Data Handling: Utilizes AES-GCM cryptography for encrypting session data.
 
 Interactive Visualizations: Displays extracted data using Cytoscape.js.
 
