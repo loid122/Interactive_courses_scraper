@@ -20,6 +20,6 @@ Backend: Flask
 
 Frontend: Cytoscape.js
 
-Scraping Tools: Requests, BeautifulSoup, re (regex)
+Scraping Tools: Requests, BeautifulSoup, re (regex), Selenium.
 
 Security: Fernet Cryptography
